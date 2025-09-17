@@ -35,6 +35,14 @@ export default function Assignments() {
           <p>Multiple Modules | Not available unitil May 26 at 12:00am |</p>
           <p>DUE: May 30 at 11:59pm  | 100 pts </p>
           </li>
+          <li className="wd-assignment-list-item">
+            <Link href="/Courses/1234/Assignments/126"
+               className="wd-assignment-link" >
+              A4 - JS + Project
+            </Link>
+            <p>Multiple Modules | Not available unitil May 26 at 12:00am |</p>
+            <p>DUE: May 30 at 11:59pm  | 100 pts </p>
+            </li>
       </ul>
     </div>
 );}

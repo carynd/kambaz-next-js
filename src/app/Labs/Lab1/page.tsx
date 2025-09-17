@@ -152,7 +152,7 @@ Your favorite books (in no particular order)
       <div id="wd-images">
   <h4>Image tag</h4>
   Loading an image from the internet: <br />
-  <Image id="wd-starship" width={400} height={300} src="https://www.staradvertiser.com/wp-content/uploads/2021/08/web1_Starship-gap2.jpg" alt="Image of the Starship" />
+  <Image id="wd-starship" width={400} height={300} src="https://www.spacelaunchschedule.com/wp-content/uploads/Super-Heavy-B4-Starship-S20-fit-check-080621-SpaceX-9f-crop-c-1024x587.jpg" alt="Image of the Starship" />
   <br />
   Loading a local image:
   <br />

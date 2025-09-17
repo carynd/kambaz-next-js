@@ -67,7 +67,7 @@ export default function AssignmentEditor() {
             <td></td>
             <td>
                 <div>
-                    Online  Entry Option
+                    Online Entry Option
                     <div>
                         <input type="checkbox"  id="wd-text-entry"/>
                         <label htmlFor="wd-text-entry">Text Entry</label>

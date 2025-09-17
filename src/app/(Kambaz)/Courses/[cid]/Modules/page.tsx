@@ -23,14 +23,175 @@ export default function Modules() {
                 <li className="wd-content-item">Learn what is Web Development</li>
               </ul>
             </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
           </ul>
         </li>
         <li className="wd-module">
-          <div className="wd-title">Week 2</div>
+                  <div className="wd-title">Week 2</div>
+          <ul className="wd-lessons">
+            <li className="wd-lesson">
+              <span className="wd-title">LEARNING OBJECTIVES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Introduction to the course</li>
+                <li className="wd-content-item">Learn what is Web Development</li>
+              </ul>
+            </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
+          </ul>
         </li>
-        <li className="wd-module">
-          <div className="wd-title">Week 3</div>
-        </li>
+                  <div className="wd-title">Week 3</div>
+          <ul className="wd-lessons">
+            <li className="wd-lesson">
+              <span className="wd-title">LEARNING OBJECTIVES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Introduction to the course</li>
+                <li className="wd-content-item">Learn what is Web Development</li>
+              </ul>
+            </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
+          </ul>
+                    <div className="wd-title">Week 4</div>
+          <ul className="wd-lessons">
+            <li className="wd-lesson">
+              <span className="wd-title">LEARNING OBJECTIVES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Introduction to the course</li>
+                <li className="wd-content-item">Learn what is Web Development</li>
+              </ul>
+            </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
+          </ul>
+                    <div className="wd-title">Week 5</div>
+          <ul className="wd-lessons">
+            <li className="wd-lesson">
+              <span className="wd-title">LEARNING OBJECTIVES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Introduction to the course</li>
+                <li className="wd-content-item">Learn what is Web Development</li>
+              </ul>
+            </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
+          </ul>
+                    <div className="wd-title">Week 6</div>
+          <ul className="wd-lessons">
+            <li className="wd-lesson">
+              <span className="wd-title">LEARNING OBJECTIVES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Introduction to the course</li>
+                <li className="wd-content-item">Learn what is Web Development</li>
+              </ul>
+            </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
+          </ul>
+                    <div className="wd-title">Week 7</div>
+          <ul className="wd-lessons">
+            <li className="wd-lesson">
+              <span className="wd-title">LEARNING OBJECTIVES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Introduction to the course</li>
+                <li className="wd-content-item">Learn what is Web Development</li>
+              </ul>
+            </li>
+            <li className="wd-lesson">
+              <span className="wd-title">READING</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Read Chapter 1</li>
+                <li className="wd-content-item">Read Chapter 1.2</li>
+              </ul>
+            </li>
+
+            <li className="wd-lesson">
+              <span className="wd-title">SLIDES</span>
+              <ul className="wd-content">
+                <li className="wd-content-item">Slideshow 1</li>
+                <li className="wd-content-item">Slideshow 2</li>
+              </ul>
+            </li>
+          </ul>
       </ul>
     </div>
 );}
