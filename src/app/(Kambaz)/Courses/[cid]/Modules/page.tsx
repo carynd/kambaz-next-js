@@ -36,6 +36,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>
@@ -63,6 +64,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>
@@ -89,6 +91,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>
@@ -114,6 +117,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>
@@ -139,6 +143,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>
@@ -164,6 +169,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>
@@ -189,6 +195,7 @@ export default function Modules() {
               <ul className="wd-content">
                 <li className="wd-content-item">Slideshow 1</li>
                 <li className="wd-content-item">Slideshow 2</li>
+                <li className="wd-content-item">Slideshow 3</li>
               </ul>
             </li>
           </ul>

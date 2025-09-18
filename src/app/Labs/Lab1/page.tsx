@@ -248,7 +248,6 @@ Your favorite books (in no particular order)
 <input type="range"
        value="4"
        max="5"
-       placeholder="Doe"
        id="wd-text-fields-rating"/><br/>
 
 <label htmlFor="wd-text-fields-dob"> Date of birth: </label>
@@ -257,11 +256,7 @@ Your favorite books (in no particular order)
        id="wd-text-fields-dob"/><br/>
 
 <h4>Anchor tag</h4>
-Please
-<a href="https://www.lipsum.com" id="wd-lipsum">click here</a>
-to get dummy text<br/>
-
-
+Please <a href="https://www.lipsum.com" id="wd-lipsum"> click here </a> to get dummy text<br/>
 
     </div>
   );
