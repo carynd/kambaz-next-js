@@ -5,8 +5,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'www.spacelaunchschedule.com',
+        protocol: "https",
+        hostname: "www.spacelaunchschedule.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.staradvertiser.com",
       },
       // You can add other domains here in the future
     ],

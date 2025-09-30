@@ -1,0 +1,13 @@
+# Vercel deployment folder
+.vercel
+
+# Next.js build folder
+.next
+out
+
+# Dependencies
+node_modules
+
+# Other common folders to ignore
+build
+coverage
