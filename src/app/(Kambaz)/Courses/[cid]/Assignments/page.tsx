@@ -9,7 +9,11 @@ import AssignmentsControls from "./AssignmentsControls";
 export default function Assignments() {
   return (
     <div id="wd-assignments">
-      <AssignmentsControls /> 
+
+     <div className="mb-4">
+        <AssignmentsControls />
+      </div>
+      
       
       <ListGroup className="rounded-0" id="wd-modules">
         <ListGroupItem className="p-3 bg-light d-flex justify-content-between align-items-center">

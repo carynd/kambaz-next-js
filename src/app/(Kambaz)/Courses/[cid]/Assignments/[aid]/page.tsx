@@ -89,19 +89,19 @@ export default function AssignmentEditor() {
             </FormGroup>
             <FormGroup className="mb-3">
               <FormLabel htmlFor="wd-due-date"><strong>Due</strong></FormLabel>
-              <FormControl type="datetime-local" defaultValue="2024-05-13T23:59" id="wd-due-date" />
+              <FormControl type="date" defaultValue="2024-05-13" id="wd-due-date" />
             </FormGroup>
             <Row>
               <Col>
                 <FormGroup>
                   <FormLabel htmlFor="wd-available-from"><strong>Available from</strong></FormLabel>
-                  <FormControl type="datetime-local" defaultValue="2024-05-06T00:00" id="wd-available-from" />
+                  <FormControl type="date" defaultValue="2024-05-06" id="wd-available-from" />
                 </FormGroup>
               </Col>
               <Col>
                 <FormGroup>
                   <FormLabel htmlFor="wd-available-until"><strong>Until</strong></FormLabel>
-                  <FormControl type="datetime-local" id="wd-available-until" defaultValue="2024-05-08T00:00" />
+                   <FormControl type="date" id="wd-available-until" defaultValue="2024-05-08" />
                 </FormGroup>
               </Col>
             </Row>
