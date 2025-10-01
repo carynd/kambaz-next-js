@@ -9,8 +9,7 @@ export default function AssignmentsControls() {
   return (
     <div id="wd-assignments-controls" className="d-flex align-items-center">
 
-      {/* Search Bar on the left, taking up available space */}
-      <div className="flex-grow-1 me-">
+      <div className="flex-grow-1 me-2">
         
         <InputGroup>
           <InputGroupText>
@@ -24,9 +23,8 @@ export default function AssignmentsControls() {
         
       </div>
 
-      {/* Buttons on the right */}
       <div>
-        <Button variant="secondary" className="me-1">
+        <Button variant="secondary" className="me-2">
           <FaPlus className="me-1" />
           Group
         </Button>
