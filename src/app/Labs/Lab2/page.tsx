@@ -1,4 +1,7 @@
 import "./index.css";
+import "./index.css";
+import { Container } from "react-bootstrap";
+
 import ForegroundColors from "./ForegroundColors";
 import BackgroundColors from "./BackgroundColors";
 import Borders from "./Borders";
@@ -10,7 +13,6 @@ import Zindex from "./Zindex";
 import Float from "./Float";
 import GridLayout from "./GridLayout";
 import Flex from "./Flex";
-import { Container } from "react-bootstrap";
 import BootstrapGrids from "./BootstrapGrids";
 import ScreenSizeLabel from "./ScreenSizeLabel";
 import BootstrapTables from "./BootstrapTables";
