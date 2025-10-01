@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import CourseNavigation from "./Navigation";
 import { FaAlignJustify } from "react-icons/fa";
-import MobileHeader from "./MobileHeader";
 export default async function CoursesLayout({
   children,
   params,
