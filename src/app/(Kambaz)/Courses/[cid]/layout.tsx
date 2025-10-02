@@ -10,7 +10,7 @@ export default async function CoursesLayout({
     <div id="wd-courses">
     <h2 className="text-danger d-none d-md-block mt-3">
         <FaAlignJustify className="me-4 fs-4 mb-1" />
-        {cid}
+        CS{cid}
       </h2>
       <hr className="d-none d-md-block" />
 

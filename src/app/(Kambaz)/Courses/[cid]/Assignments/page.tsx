@@ -3,7 +3,7 @@ import { Badge, ListGroup, ListGroupItem } from "react-bootstrap";
 import { BsGripVertical, BsPlus } from "react-icons/bs";
 import LessonControlButtons from "../Modules/LessonControlButtons";
 import { LuNotebookPen } from "react-icons/lu";
-import { FaEllipsisV } from "react-icons/fa";
+import { FaCaretDown, FaEllipsisV,  } from "react-icons/fa";
 import AssignmentsControls from "./AssignmentsControls"; 
 
 export default function Assignments() {
@@ -18,8 +18,9 @@ export default function Assignments() {
       <ListGroup className="rounded-0" id="wd-modules">
         <ListGroupItem className="p-3 bg-light d-flex justify-content-between align-items-center">
           <div>
-            <BsGripVertical className=" fs-3" />
-            <span className="fw-bold fs-4 align-items-center">ASSIGNMENTS</span>
+            <BsGripVertical className=" fs-3" /> <FaCaretDown className="me-2" />
+            <span className="fw-bold fs-4 align-items-center"> 
+              ASSIGNMENTS</span>
           </div>
 
           <div>

@@ -34,11 +34,11 @@ export default function ModulesControls() {
                 </DropdownMenu>
             </Dropdown>
             {/* Implement the View Progress and Collapse All buttons with IDs wd-view-progress and wd-collapse-all */}
-            <Button variant="secondary" size="lg" className="me-2 float-end" id="wd-collapse-all-btn">
-                Collapse All
-            </Button>
             <Button variant="secondary" size="lg" className="me-2 float-end" id="wd-view-progress-btn">
                 View Progress
+            </Button>
+            <Button variant="secondary" size="lg" className="me-2 float-end" id="wd-collapse-all-btn">
+                Collapse All
             </Button>
 
         </div>
