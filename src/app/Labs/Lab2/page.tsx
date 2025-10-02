@@ -20,6 +20,8 @@ import BootstrapLists from "./BootstrapLists";
 import BootstrapForms from "./BootstrapForms";
 import BootstrapNavigation from "./BootstrapNavigation";
 
+import ReactIconsSampler from "./ReactIcons";
+
 export default function Lab2() {
   return (
     <Container>
@@ -85,6 +87,7 @@ export default function Lab2() {
         <Float />
         <GridLayout />
         <Flex />
+        <ReactIconsSampler />
         <BootstrapGrids />
         <ScreenSizeLabel />
         <BootstrapTables />
