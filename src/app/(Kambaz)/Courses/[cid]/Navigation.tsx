@@ -1,31 +1,34 @@
+"use client"
 import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+
 export default function CourseNavigation() {
+  const { cid } = useParams();
+  const pathname = usePathname();
+
+  const links = [
+    { label: "Home", path: `/Courses/${cid}/Home` },
+    { label: "Modules", path: `/Courses/${cid}/Modules` },
+    { label: "Piazza", path: `/Courses/${cid}/Piazza` },
+    { label: "Zoom", path: `/Courses/${cid}/Zoom` },
+    { label: "Assignments", path: `/Courses/${cid}/Assignments` },
+    { label: "Quizzes", path: `/Courses/${cid}/Quizzes` },
+    { label: "Grades", path: `/Courses/${cid}/Grades` },
+    { label: "People", path: `/Courses/${cid}/People/Table` },
+  ];
+
   return (
-    <div id="wd-courses-navigation"  className="wd list-group fs-5 rounded-0">
-      <Link href="/Courses/1234/Home" id="wd-course-home-link" className="list-group-item active border-0">
-        Home
-      </Link>
-      <Link href="/Courses/1234/Modules" id="wd-course-modules-link" className="list-group-item text-danger border-0">
-        Modules
-      </Link>
-      <Link href="/Courses/1234/Piazza" id="wd-course-piazza-link" className="list-group-item text-danger border-0">
-        Piazza
-      </Link>
-      <Link href="/Courses/1234/Zoom" id="wd-course-zoom-link" className="list-group-item text-danger border-0">
-        Zoom
-      </Link>
-      <Link href="/Courses/1234/Assignments" id="wd-course-quizzes-link" className="list-group-item text-danger border-0">
-        Assignments
-      </Link>
-      <Link href="/Courses/1234/Quizzes" id="wd-course-assignments-link" className="list-group-item text-danger border-0">
-        Quizzes
-      </Link>
-      <Link href="/Courses/1234/Grades" id="wd-course-grades-link" className="list-group-item text-danger border-0">
-        Grades
-      </Link>
-      <Link href="/Courses/1234/People/Table" id="wd-course-people-link" className="list-group-item text-danger border-0">
-        People
-      </Link>
+    <div id="wd-courses-navigation" className="wd list-group fs-5 rounded-0">
+      {links.map((link) => (
+        <Link
+          key={link.label}
+          href={link.path}
+          className={`list-group-item border-0 ${pathname.includes(link.label) ? "active" : "text-danger"
+            }`}
+        >
+          {link.label}
+        </Link>
+      ))}
     </div>
   );
 }
