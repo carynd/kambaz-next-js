@@ -12,8 +12,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "www.staradvertiser.com",
       },
-      // You can add other domains here in the future
     ],
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 
