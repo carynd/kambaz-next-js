@@ -14,7 +14,7 @@ export default function AssignmentEditor() {
 
   const formatDateTimeForInput = (dateString: string) => {
     if (!dateString) return "";
-    return dateString.slice(0, 16); // Gets YYYY-MM-DDTHH:mm from ISO string
+    return dateString.slice(0, 16);
   };
 
   return (
@@ -25,14 +25,12 @@ export default function AssignmentEditor() {
         <FormControl defaultValue={assignment.title} id="wd-name" />
       </FormGroup>
 
-
       <FormGroup className="mb-4">
-        <FormControl
-          as="textarea"
-          rows={8}
-          id="wd-description"
-          defaultValue={assignment.description}
-        />
+        <div className="border rounded p-3"
+          style={{ minHeight: '200px', backgroundColor: '#f8f9fa' }}
+          dangerouslySetInnerHTML={{ __html: assignment.description }}
+        >
+        </div>
       </FormGroup>
 
       <Row className="mb-3 align-items-center">
@@ -41,19 +39,6 @@ export default function AssignmentEditor() {
         </Col>
         <Col sm={9}>
           <FormControl type="number" defaultValue={assignment.points} id="wd-points" />
-        </Col>
-      </Row>
-
-      <Row className="mb-3 align-items-center">
-        <Col sm={3} className="text-sm-end">
-          <FormLabel htmlFor="wd-group">Assignment Group</FormLabel>
-        </Col>
-        <Col sm={9}>
-          <FormSelect defaultValue="ASSIGNMENTS" id="wd-group">
-            <option>ASSIGNMENTS</option>
-            <option>EXAMS</option>
-            <option>PROJECTS</option>
-          </FormSelect>
         </Col>
       </Row>
 
@@ -69,69 +54,56 @@ export default function AssignmentEditor() {
         </Col>
       </Row>
 
-      <Row className="mb-3">
-        <Col sm={3} className="text-sm-end pt-2">
-          <FormLabel htmlFor="wd-submission-type">Submission Type</FormLabel>
-        </Col>
-        <Col sm={9}>
-          <div className="border p-3 rounded">
-            <FormSelect defaultValue="Online" id="wd-submission-type" className="mb-3">
-              <option>Online</option>
-              <option>On Paper</option>
-              <option>No Submission</option>
-            </FormSelect>
-            <div>
-              <strong className="d-block mb-2">Online Entry Options</strong>
-              <FormCheck type="checkbox" id="wd-text-entry" label="Text Entry" />
-              <FormCheck type="checkbox" id="wd-website-url" label="Website URL" defaultChecked />
-              <FormCheck type="checkbox" id="wd-media-recordings" label="Media Recordings" />
-              <FormCheck type="checkbox" id="wd-student-annotation" label="Student Annotation" />
-              <FormCheck type="checkbox" id="wd-file-upload" label="File Uploads" />
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      <Row className="mb-3">
-        <Col sm={3} className="text-sm-end pt-2">
-          <FormLabel>Assign</FormLabel>
+      <Row className="mb-4">
+        <Col sm={3} className="text-end">
+          <FormLabel className="pt-2">Assign</FormLabel>
         </Col>
         <Col sm={9}>
           <div className="border p-3 rounded">
             <FormGroup className="mb-3">
-              <FormLabel htmlFor="wd-assign-to"><strong>Assign To</strong></FormLabel>
+              <FormLabel htmlFor="wd-assign-to"><strong>Assign to</strong></FormLabel>
               <FormControl defaultValue="Everyone" id="wd-assign-to" />
             </FormGroup>
             <FormGroup className="mb-3">
               <FormLabel htmlFor="wd-due-date"><strong>Due</strong></FormLabel>
-              <FormControl type="date" defaultValue={formatDateTimeForInput(assignment.dueDate)} id="wd-due-date" />
+              <FormControl
+                type="datetime-local"
+                defaultValue={formatDateTimeForInput(assignment.dueDate)}
+                id="wd-due-date"
+              />
             </FormGroup>
             <Row>
               <Col>
                 <FormGroup>
                   <FormLabel htmlFor="wd-available-from"><strong>Available from</strong></FormLabel>
-                  <FormControl type="date" defaultValue={formatDateTimeForInput(assignment.availableFromDate)} id="wd-available-from" />
+                  <FormControl
+                    type="datetime-local"
+                    defaultValue={formatDateTimeForInput(assignment.availableFromDate)}
+                    id="wd-available-from"
+                  />
                 </FormGroup>
               </Col>
               <Col>
                 <FormGroup>
                   <FormLabel htmlFor="wd-available-until"><strong>Until</strong></FormLabel>
-                  <FormControl type="date" id="wd-available-until" defaultValue={formatDateTimeForInput(assignment.availableUntilDate)} />
+                  <FormControl
+                    type="datetime-local"
+                    id="wd-available-until"
+                    defaultValue={formatDateTimeForInput(assignment.availableUntilDate)}
+                  />
                 </FormGroup>
               </Col>
             </Row>
           </div>
         </Col>
       </Row>
-
       <hr />
-
-      <div className="text-end">
+      <div className="d-flex justify-content-end gap-2 mb-4">
         <Link href={`/Courses/${cid}/Assignments`}>
-          <Button id="wd-cancel" variant="light" className="me-2 border">Cancel</Button>
+          <Button variant="light" className="border px-4">Cancel</Button>
         </Link>
         <Link href={`/Courses/${cid}/Assignments`}>
-          <Button id="wd-save" variant="danger">Save</Button>
+          <Button variant="danger" className="px-4">Save</Button>
         </Link>
       </div>
 

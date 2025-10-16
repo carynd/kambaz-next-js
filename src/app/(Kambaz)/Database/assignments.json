@@ -3,10 +3,10 @@
     "_id": "A101",
     "title": "Propulsion Assignment",
     "course": "RS101",
-    "description": "Study rocket propulsion fundamentals and engine types",
+    "description": "The assignment is available online</span><br><br>Submit a link to the landing page of your Web application running on Netlify.<br><br>The landing page should include the following:<br><ul><li>Your full name and section</li><li>Links to each of the lab assignments</li><li>Link to the Kanbas application</li><li>Links to all relevant source code repositories</li></ul>The Kanbas application should include a link to navigate back to the landing page.",
     "points": 100,
     "dueDate": "2024-05-13T23:59:00",
-    "availableFromDate": "2024-05-06T00:00:00",
+    "availableFromDate": "2024-05-06T12:00:00",
     "availableUntilDate": "2024-05-20T23:59:00"
   },
   {

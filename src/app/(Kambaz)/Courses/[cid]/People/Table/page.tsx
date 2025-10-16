@@ -26,18 +26,14 @@ export default function PeopleTable() {
         </thead>
         <tbody>
           {users
-            .filter((user: User) =>
-              enrollments.some(
-                (enrollment: Enrollment) =>
-                  enrollment.user === user._id &&
-                  enrollment.course === cid
-              )
+            .filter((usr) =>
+              enrollments.some((enrollment) => enrollment.user === usr._id && enrollment.course === cid)
             )
-            .map((user: User) => (
+            .map((user: any) => (
               <tr key={user._id}>
                 <td className="wd-full-name text-nowrap">
                   <FaUserCircle className="me-2 fs-1 text-secondary" />
-                  <span className="wd-first-name">{user.firstName} </span>
+                  <span className="wd-first-name">{user.firstName}</span>
                   <span className="wd-last-name">{user.lastName}</span>
                 </td>
                 <td className="wd-login-id">{user.loginId}</td>
