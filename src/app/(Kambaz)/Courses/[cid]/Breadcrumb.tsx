@@ -5,20 +5,13 @@ import { usePathname } from "next/navigation";
 
 export default function Breadcrumb({ course }: { course: { name: string } | undefined; }) {
     const pathname = usePathname();
-    const parts = pathname.split("/").filter(Boolean);
-    let section = "Home";
-
-    if (parts.length >= 3) {
-        section = parts[2];
-
-        if (section === "People" && parts[3] === "Table") {
-            section = "People";
-        }
-    }
+    const pathSegments = pathname.split("/").filter(Boolean);
+    const currentSection = pathSegments[pathSegments.length - 1];
+    const section = currentSection === "Table" ? "People" : currentSection;
 
     return (
-        <>
+        <span className="text-danger">
             {course?.name} &gt; {section}
-        </>
+        </span>
     );
 }
