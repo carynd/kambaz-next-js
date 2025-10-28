@@ -1,3 +1,4 @@
+"use client";
 import { useSelector, useDispatch } from "react-redux";
 import { ListGroupItem, Button, FormControl } from "react-bootstrap";
 import { addTodo, setTodo, updateTodo } from "./todosReducer";

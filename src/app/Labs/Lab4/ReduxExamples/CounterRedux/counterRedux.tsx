@@ -1,20 +1,20 @@
 "use client";
-import { createSlice } from "@reduxjs/toolkit";
-const initialState = {
-    count: 0,
-};
-const counterSlice = createSlice({
-    name: "counter",
-    initialState,
-    reducers: {
-        increment: (state) => {
-            state.count = state.count + 1;
-        },
-        decrement: (state) => {
-            state.count = state.count - 1;
-        },
-    },
-});
-export const { increment, decrement } = counterSlice.actions;
-export default counterSlice.reducer;
+import { useSelector, useDispatch } from "react-redux";
+import { increment, decrement } from "./counterReducer";
+
+export default function CounterRedux() {
+    const { count } = useSelector((state: any) => state.counterReducer);
+    const dispatch = useDispatch();
+    return (
+        <div id="wd-counter-redux">
+            <h2>Counter Redux</h2>
+            <h3>{count}</h3>
+            <button onClick={() => dispatch(increment())}
+                id="wd-counter-redux-increment-click"> Increment </button>
+            <button onClick={() => dispatch(decrement())}
+                id="wd-counter-redux-decrement-click"> Decrement </button>
+            <hr />
+        </div>
+    );
+}
 

@@ -1,14 +1,36 @@
-import { ReactNode } from "react";
+"use client";
+import { ReactNode, useEffect } from "react";
 import CourseNavigation from "./Navigation";
 import { FaAlignJustify } from "react-icons/fa";
 import { courses } from "../../Database";
 import Breadcrumb from "./Breadcrumb";
-export default async function CoursesLayout({
+import { useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+
+export default function CoursesLayout({
   children,
-  params,
-}: Readonly<{ children: ReactNode; params: Promise<{ cid: string }> }>) {
-  const { cid } = await params;
+}: Readonly<{ children: ReactNode }>) {
+  const params = useParams();
+  const cid = params.cid as string;
+  const { currentUser } = useSelector((state: any) => state.accountReducer);
+  const { enrollments } = useSelector((state: any) => state.enrollmentsReducer);
+  const router = useRouter();
+
   const course = courses.find((course) => course._id === cid);
+
+  const isEnrolled = () => {
+    if (!currentUser) return false;
+    return enrollments.some(
+      (e: any) => e.user === currentUser._id && e.course === cid
+    );
+  };
+
+  useEffect(() => {
+    if (!currentUser || !isEnrolled()) {
+      router.push("/Dashboard");
+    }
+  }, [currentUser, enrollments, cid, router]);
 
   return (
     <div id="wd-courses">
