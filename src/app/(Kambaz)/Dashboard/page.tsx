@@ -1,18 +1,17 @@
 "use client"
 import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import Link from "next/link";
 import { Button, Card, CardBody, CardImg, CardText, CardTitle, Col, FormControl, Row } from "react-bootstrap";
-import * as db from "../Database";
 import { useSelector, useDispatch } from "react-redux";
 import { enrollCourse, unenrollCourse } from "./enrollmentsReducer";
+import { addNewCourse, deleteCourse, updateCourse } from "../Courses/reducer";
 
 export default function Dashboard() {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
   const { enrollments } = useSelector((state: any) => state.enrollmentsReducer);
+  const { courses } = useSelector((state: any) => state.coursesReducer);
   const dispatch = useDispatch();
 
-  const [courses, setCourses] = useState<any[]>(db.courses);
   const [showAllCourses, setShowAllCourses] = useState(false);
 
   const [course, setCourse] = useState<any>({
@@ -21,28 +20,21 @@ export default function Dashboard() {
     image: "/images/reactjs.jpg", description: "New Description"
   });
 
-  const addNewCourse = () => {
-    console.log("Add button clicked! Current course:", course);
-    const newCourse = { ...course, _id: uuidv4() };
-    console.log("New course created:", newCourse);
-    setCourses([...courses, newCourse]);
-    console.log("Courses updated:", [...courses, newCourse]);
+  const handleAddNewCourse = () => {
+    dispatch(addNewCourse(course));
+    setCourse({
+      _id: "0", name: "New Course", number: "New Number",
+      startDate: "2023-09-10", endDate: "2023-12-15",
+      image: "/images/reactjs.jpg", description: "New Description"
+    });
   };
 
-  const deleteCourse = (courseId: string) => {
-    setCourses(courses.filter((c) => c._id !== courseId));
+  const handleDeleteCourse = (courseId: string) => {
+    dispatch(deleteCourse(courseId));
   };
 
-  const updateCourse = () => {
-    setCourses(
-      courses.map((c) => {
-        if (c._id === course._id) {
-          return course;
-        } else {
-          return c;
-        }
-      })
-    );
+  const handleUpdateCourse = () => {
+    dispatch(updateCourse(course));
   };
 
   const isEnrolled = (courseId: string) => {
@@ -63,7 +55,7 @@ export default function Dashboard() {
 
   const displayedCourses = showAllCourses
     ? courses
-    : courses.filter((c) => isEnrolled(c._id) || currentUser?.role === "FACULTY");
+    : courses.filter((c: any) => isEnrolled(c._id) || currentUser?.role === "FACULTY");
 
   if (!currentUser) {
     return (
@@ -97,10 +89,10 @@ export default function Dashboard() {
             <div>
               <Button variant="primary"
                 id="wd-add-new-course-click"
-                onClick={addNewCourse}> Add </Button>
+                onClick={handleAddNewCourse}> Add </Button>
               <Button variant="warning" className="ms-2"
                 id="wd-update-course-click"
-                onClick={updateCourse}> Update </Button>
+                onClick={handleUpdateCourse}> Update </Button>
             </div>
           </div>
           <hr />
@@ -119,7 +111,7 @@ export default function Dashboard() {
 
       <div id="wd-dashboard-courses">
         <Row xs={1} md={5} className="g-4">
-          {displayedCourses.map((c) => (
+          {displayedCourses.map((c: any) => (
             <Col className="wd-dashboard-course" style={{ width: "300px" }} key={c._id}>
               <Card>
                 <Link href={`/Courses/${c._id}/Home`}
@@ -139,7 +131,7 @@ export default function Dashboard() {
                         <Button
                           onClick={(event) => {
                             event.preventDefault();
-                            deleteCourse(c._id);
+                            handleDeleteCourse(c._id);
                           }}
                           variant="danger"
                           className="float-end"
