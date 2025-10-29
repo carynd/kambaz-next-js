@@ -22,8 +22,11 @@ export default function Dashboard() {
   });
 
   const addNewCourse = () => {
+    console.log("Add button clicked! Current course:", course);
     const newCourse = { ...course, _id: uuidv4() };
+    console.log("New course created:", newCourse);
     setCourses([...courses, newCourse]);
+    console.log("Courses updated:", [...courses, newCourse]);
   };
 
   const deleteCourse = (courseId: string) => {
@@ -60,7 +63,7 @@ export default function Dashboard() {
 
   const displayedCourses = showAllCourses
     ? courses
-    : courses.filter((c) => isEnrolled(c._id));
+    : courses.filter((c) => isEnrolled(c._id) || currentUser?.role === "FACULTY");
 
   if (!currentUser) {
     return (
@@ -89,14 +92,18 @@ export default function Dashboard() {
 
       {currentUser?.role === "FACULTY" && (
         <>
-          <h5>New Course
-            <button className="btn btn-primary float-end"
-              id="wd-add-new-course-click"
-              onClick={addNewCourse}> Add </button>
-            <button className="btn btn-warning float-end me-2"
-              id="wd-update-course-click"
-              onClick={updateCourse}> Update </button>
-          </h5><hr />
+          <div className="d-flex justify-content-between align-items-center">
+            <h5 style={{ margin: 0 }}>New Course</h5>
+            <div>
+              <Button variant="primary"
+                id="wd-add-new-course-click"
+                onClick={addNewCourse}> Add </Button>
+              <Button variant="warning" className="ms-2"
+                id="wd-update-course-click"
+                onClick={updateCourse}> Update </Button>
+            </div>
+          </div>
+          <hr />
           <FormControl value={course.name} className="mb-2"
             onChange={(e) => setCourse({ ...course, name: e.target.value })} />
           <FormControl as="textarea" value={course.description} rows={3}
