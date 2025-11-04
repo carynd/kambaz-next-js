@@ -2,6 +2,7 @@
 import { redirect } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../store";
 import { setCurrentUser } from "../reducer";
 import { Button, FormControl } from "react-bootstrap";
 export default function Profile() {

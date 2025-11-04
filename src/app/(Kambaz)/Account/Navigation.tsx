@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Nav, NavItem, NavLink } from "react-bootstrap";
 import { useSelector } from "react-redux";
+import { RootState } from "../store";
 export default function AccountNavigation() {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
   const links = currentUser ? ["Profile"] : ["Signin", "Signup"];

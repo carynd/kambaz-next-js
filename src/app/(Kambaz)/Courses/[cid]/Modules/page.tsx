@@ -8,12 +8,13 @@ import ModuleControlButtons from "./ModuleControlButtons";
 import LessonControlButtons from "./LessonControlButtons";
 import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../../store";
 import { addModule, deleteModule, updateModule, editModule } from "./reducer";
 
 export default function Modules() {
   const { cid } = useParams();
   const [moduleName, setModuleName] = useState("");
-  const { modules } = useSelector((state: any) => state.modulesReducer);
+  const { modules } = useSelector((state: RootState) => state.modulesReducer);
   const dispatch = useDispatch();
 
   return (

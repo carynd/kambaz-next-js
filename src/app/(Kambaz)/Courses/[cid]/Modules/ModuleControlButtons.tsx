@@ -3,6 +3,7 @@ import GreenCheckmark from "./GreenCheckmark";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { FaPencil } from "react-icons/fa6";
 import { useSelector } from "react-redux";
+import { RootState } from "../../../store";
 
 export default function ModuleControlButtons({ moduleId, deleteModule, editModule }: {
   moduleId: string; deleteModule: (moduleId: string) => void;

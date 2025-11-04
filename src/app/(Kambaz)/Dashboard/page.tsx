@@ -3,13 +3,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button, Card, CardBody, CardImg, CardText, CardTitle, Col, FormControl, Row } from "react-bootstrap";
 import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../store";
 import { enrollCourse, unenrollCourse } from "./enrollmentsReducer";
 import { addNewCourse, deleteCourse, updateCourse } from "../Courses/reducer";
 
 export default function Dashboard() {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
-  const { enrollments } = useSelector((state: any) => state.enrollmentsReducer);
-  const { courses } = useSelector((state: any) => state.coursesReducer);
+  const { enrollments } = useSelector((state: RootState) => state.enrollmentsReducer);
+  const { courses } = useSelector((state: RootState) => state.coursesReducer);
   const dispatch = useDispatch();
 
   const [showAllCourses, setShowAllCourses] = useState(false);
@@ -76,7 +77,7 @@ export default function Dashboard() {
           className="float-end"
           onClick={() => setShowAllCourses(!showAllCourses)}
         >
-          Enrollments
+          {showAllCourses ? "Courses" : "Enrollments"}
         </Button>
       </h1>
       <hr />

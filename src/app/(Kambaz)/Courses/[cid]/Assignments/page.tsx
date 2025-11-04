@@ -9,12 +9,13 @@ import AssignmentsControls from "./AssignmentsControls";
 import { useParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { useState } from "react";
+import { RootState } from "../../../store";
 import { deleteAssignment } from "./reducer";
 
 export default function Assignments() {
   const { cid } = useParams();
   const { currentUser } = useSelector((state: any) => state.accountReducer);
-  const { assignments } = useSelector((state: any) => state.assignmentsReducer);
+  const { assignments } = useSelector((state: RootState) => state.assignmentsReducer);
   const dispatch = useDispatch();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null);

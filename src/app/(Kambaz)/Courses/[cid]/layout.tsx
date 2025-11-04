@@ -2,9 +2,9 @@
 import { ReactNode, useEffect } from "react";
 import CourseNavigation from "./Navigation";
 import { FaAlignJustify } from "react-icons/fa";
-import { courses } from "../../Database";
 import Breadcrumb from "./Breadcrumb";
 import { useSelector } from "react-redux";
+import type { RootState } from "../../store";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 
@@ -14,10 +14,11 @@ export default function CoursesLayout({
   const params = useParams();
   const cid = params.cid as string;
   const { currentUser } = useSelector((state: any) => state.accountReducer);
-  const { enrollments } = useSelector((state: any) => state.enrollmentsReducer);
+  const { enrollments } = useSelector((state: RootState) => state.enrollmentsReducer);
+  const { courses } = useSelector((state: RootState) => state.coursesReducer);
   const router = useRouter();
 
-  const course = courses.find((course) => course._id === cid);
+  const course = courses.find((course: any) => course._id === cid);
 
   const isEnrolled = () => {
     if (!currentUser) return false;

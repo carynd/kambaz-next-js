@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../../../store";
 import { addAssignment, updateAssignment } from "../reducer";
 import { FormControl, Button } from "react-bootstrap";
 
@@ -9,7 +10,7 @@ export default function AssignmentEditor() {
   const { cid, aid } = useParams();
   const router = useRouter();
   const dispatch = useDispatch();
-  const { assignments } = useSelector((state: any) => state.assignmentsReducer);
+  const { assignments } = useSelector((state: RootState) => state.assignmentsReducer);
 
   const [assignment, setAssignment] = useState<any>({
     title: "",

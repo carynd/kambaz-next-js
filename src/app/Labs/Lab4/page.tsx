@@ -14,7 +14,7 @@ import BooleanStateVariables from "./BooleanStateVariables";
 import dynamicImport from "next/dynamic";
 
 const ArrayStateVariable = dynamicImport(() => import('./ArrayStateVariable'), { ssr: false });
-const ReduxExamples = dynamicImport(() => import('./ReduxExamples/page'), { ssr: false });
+const ReduxExamples = dynamicImport(() => import('./ReduxExamples'), { ssr: false });
 
 export default function Lab4() {
     function sayHello() {
