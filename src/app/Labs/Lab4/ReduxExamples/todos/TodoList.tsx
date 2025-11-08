@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable react/jsx-key */
 import React from "react";
 import TodoForm from "./TodoForm";
 import TodoItem from "./TodoItem";
@@ -14,7 +13,7 @@ export default function TodoList() {
             <ListGroup>
                 <TodoForm />
                 {todos.map((todo: { id: string; title: string }) => (
-                    <TodoItem todo={todo} />
+                    <TodoItem key={todo.id} todo={todo} />
                 ))}
             </ListGroup>
             <hr />
