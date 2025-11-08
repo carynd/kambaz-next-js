@@ -15,18 +15,22 @@ export default function Modules() {
   const { cid } = useParams();
   const [moduleName, setModuleName] = useState("");
   const { modules } = useSelector((state: RootState) => state.modulesReducer);
+  const { currentUser } = useSelector((state: any) => state.accountReducer);
   const dispatch = useDispatch();
 
   return (
     <div>
-      <ModulesControls
-        setModuleName={setModuleName}
-        moduleName={moduleName}
-        addModule={() => {
-          dispatch(addModule({ name: moduleName, course: cid }));
-          setModuleName("");
-        }}
-      />
+      {/* Only FACULTY can see add module button */}
+      {currentUser?.role === "FACULTY" && (
+        <ModulesControls
+          setModuleName={setModuleName}
+          moduleName={moduleName}
+          addModule={() => {
+            dispatch(addModule({ name: moduleName, course: cid }));
+            setModuleName("");
+          }}
+        />
+      )}
       <br /><br /><br /><br />
       <ListGroup id="wd-modules" className="rounded-0">
         {modules
@@ -39,7 +43,8 @@ export default function Modules() {
               <div className="wd-title p-3 ps-2 bg-secondary">
                 <BsGripVertical className="me-2 fs-3" />
                 {!module.editing && module.name}
-                {module.editing && (
+                {/* Only FACULTY can edit module names */}
+                {module.editing && currentUser?.role === "FACULTY" && (
                   <FormControl
                     className="w-50 d-inline-block"
                     onChange={(e) =>
@@ -74,7 +79,10 @@ export default function Modules() {
                     >
                       <BsGripVertical className="me-2 fs-3" />
                       {lesson.name}
-                      <LessonControlButtons />
+                      {/* Only FACULTY can see lesson control buttons */}
+                      {currentUser?.role === "FACULTY" && (
+                        <LessonControlButtons />
+                      )}
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
