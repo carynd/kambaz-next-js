@@ -33,6 +33,11 @@ export default function Labs() {
               Lab 4: Maintaining State in React Application{" "}
             </Link>
           </li>
+          <li>
+            <Link href="/Labs/Lab5" id="wd-lab4-link">
+              Lab 5: Implementing RESTful Web APIs with Express.js{" "}
+            </Link>
+          </li>
         </ul>
       </div>
     </ReduxProvider>

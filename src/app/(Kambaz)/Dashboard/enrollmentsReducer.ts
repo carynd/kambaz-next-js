@@ -3,10 +3,10 @@ import { enrollments as dbEnrollments } from "../Database";
 
 const getInitialEnrollments = () => {
   if (typeof window === "undefined") {
-    return dbEnrollments;
+    return [];
   }
   const saved = localStorage.getItem("enrollments");
-  return saved ? JSON.parse(saved) : dbEnrollments;
+  return saved ? JSON.parse(saved) : [];
 };
 
 const initialState = {
@@ -17,6 +17,12 @@ const enrollmentsSlice = createSlice({
   name: "enrollments",
   initialState,
   reducers: {
+    setEnrollments: (state, action) => {
+      state.enrollments = action.payload;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("enrollments", JSON.stringify(state.enrollments));
+      }
+    },
     enrollCourse: (state, { payload: { userId, courseId } }) => {
       const newEnrollment = {
         _id: `${Date.now()}`,
@@ -39,5 +45,5 @@ const enrollmentsSlice = createSlice({
   },
 });
 
-export const { enrollCourse, unenrollCourse } = enrollmentsSlice.actions;
+export const { setEnrollments, enrollCourse, unenrollCourse } = enrollmentsSlice.actions;
 export default enrollmentsSlice.reducer;

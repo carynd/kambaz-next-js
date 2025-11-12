@@ -1,23 +1,41 @@
 "use client";
 import { redirect } from "next/dist/client/components/navigation";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store";
 import { setCurrentUser } from "../reducer";
 import { Button, FormControl } from "react-bootstrap";
+import * as client from "../client";
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>({});
   const dispatch = useDispatch();
+  const router = useRouter();
   const { currentUser } = useSelector((state: any) => state.accountReducer);
 
   const saveProfile = () => {
     dispatch(setCurrentUser(profile));
   };
 
-  const signout = () => {
-    dispatch(setCurrentUser(null));
-    redirect("/Account/Signin");
+  const updateProfile = async () => {
+    const updatedProfile = await client.updateUser(profile);
+    if (!updatedProfile) return;
+    dispatch(setCurrentUser(updatedProfile));
+    alert("Profile updated successfully!");
+  };
+
+  const handleSignout = async () => {
+    try {
+      console.log("Signing out user...");
+      await client.signout();
+      dispatch(setCurrentUser(null));
+      router.push("/Account/Signin");
+    } catch (err) {
+      console.error("Signout error:", err);
+      dispatch(setCurrentUser(null));
+      router.push("/Account/Signin");
+    }
   };
 
   useEffect(() => {
@@ -68,10 +86,9 @@ export default function Profile() {
             <option value="FACULTY">Faculty</option>
             <option value="STUDENT">Student</option>
           </select>
-          <Button onClick={saveProfile} variant="success" className="w-100 mb-2" id="wd-save-profile-btn">
-            Save Profile
+          <Button onClick={updateProfile} className="btn btn-primary w-100 mb-2"> Update
           </Button>
-          <Button onClick={signout} variant="danger" className="w-100 mb-2" id="wd-signout-btn">
+          <Button onClick={handleSignout} variant="danger" className="w-100 mb-2" id="wd-signout-btn">
             Sign out
           </Button>
         </div>

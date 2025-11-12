@@ -8,9 +8,10 @@ import { FaCaretDown, FaEllipsisV, FaTrash, } from "react-icons/fa";
 import AssignmentsControls from "./AssignmentsControls";
 import { useParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RootState } from "../../../store";
-import { deleteAssignment } from "./reducer";
+import { setAssignments } from "./reducer";
+import * as client from "./client";
 
 export default function Assignments() {
   const { cid } = useParams();
@@ -42,13 +43,27 @@ export default function Assignments() {
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (assignmentToDelete) {
-      dispatch(deleteAssignment(assignmentToDelete));
+      await client.deleteAssignment(assignmentToDelete);
+      dispatch(setAssignments(assignments.filter((a: any) => a._id !== assignmentToDelete)));
       setShowDeleteDialog(false);
       setAssignmentToDelete(null);
     }
   };
+
+  const fetchAssignments = async () => {
+    try {
+      const assignmentsData = await client.findAssignmentsForCourse(cid as string);
+      dispatch(setAssignments(assignmentsData));
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssignments();
+  }, [cid]);
 
   const cancelDelete = () => {
     setShowDeleteDialog(false);

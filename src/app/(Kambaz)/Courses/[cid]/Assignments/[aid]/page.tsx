@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../../store";
-import { addAssignment, updateAssignment } from "../reducer";
+import { setAssignments } from "../reducer";
 import { FormControl, Button } from "react-bootstrap";
 import { FaCalendar } from "react-icons/fa";
+import * as client from "../client";
 
 export default function AssignmentEditor() {
   const { cid, aid } = useParams();
@@ -40,13 +41,21 @@ export default function AssignmentEditor() {
 
   }, [aid, assignments, currentUser, cid, router]);
 
-  const handleSave = () => {
-    if (aid === "new") {
-      dispatch(addAssignment(assignment));
-    } else {
-      dispatch(updateAssignment(assignment));
+  const handleSave = async () => {
+    try {
+      if (aid === "new") {
+        const newAssignment = await client.createAssignmentForCourse(cid as string, assignment);
+        const allAssignments = await client.findAssignmentsForCourse(cid as string);
+        dispatch(setAssignments(allAssignments));
+      } else {
+        const updatedAssignment = await client.updateAssignment(assignment);
+        const allAssignments = await client.findAssignmentsForCourse(cid as string);
+        dispatch(setAssignments(allAssignments));
+      }
+      router.push(`/Courses/${cid}/Assignments`);
+    } catch (error) {
+      console.error("Error saving assignment:", error);
     }
-    router.push(`/Courses/${cid}/Assignments`);
   };
 
   const handleCancel = () => {
