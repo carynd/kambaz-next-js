@@ -113,7 +113,7 @@ export default function WorkingWithArrays() {
             <br />
             <hr />
 
-            <h3>5.2.4.7: Updating Todo Completed and Description</h3>
+            <h3>Updating Todo Completed and Description</h3>
 
             <h4>Complete Todo ID = 1</h4>
             <div className="mb-3">

@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import * as client from "../Courses/client";
+import * as enrollmentClient from "../Enrollments/client";
 import Link from "next/link";
 import { Button, Card, CardBody, CardImg, CardText, CardTitle, Col, FormControl, Row } from "react-bootstrap";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
-import { enrollCourse, unenrollCourse } from "./enrollmentsReducer";
+import { enrollCourse, unenrollCourse, setEnrollments } from "./enrollmentsReducer";
 import { addNewCourse, deleteCourse, updateCourse, setCourses } from "../Courses/reducer";
 
 export default function Dashboard() {
@@ -65,24 +66,35 @@ export default function Dashboard() {
     );
   };
 
-  const fetchCourses = async () => {
-    try {
-      let courses;
-      // Faculty can see all courses; Students see only enrolled courses
-      if (currentUser?.role === "FACULTY") {
-        courses = await client.fetchAllCourses();
-      } else {
-        courses = await client.findMyCourses();
-      }
-      dispatch(setCourses(courses));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
+    const fetchEnrollments = async () => {
+      if (!currentUser) return;
+      try {
+        const enrollmentsData = await enrollmentClient.findEnrollmentsForUser(currentUser._id);
+        dispatch(setEnrollments(enrollmentsData));
+      } catch (error) {
+        console.error("Error fetching enrollments:", error);
+      }
+    };
+
+    const fetchCourses = async () => {
+      try {
+        let courses;
+        // Faculty can see all courses; Students see only enrolled courses
+        if (currentUser?.role === "FACULTY") {
+          courses = await client.fetchAllCourses();
+        } else {
+          courses = await client.findMyCourses();
+        }
+        dispatch(setCourses(courses));
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
     fetchCourses();
-  }, [currentUser]);
+    fetchEnrollments();
+  }, [currentUser, dispatch]);
 
   const handleEnrollment = (courseId: string) => {
     if (!currentUser) return;

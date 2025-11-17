@@ -20,34 +20,49 @@ export default function WorkingWithArraysAsynchronously() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchTodos = async () => {
-    const todos = await client.fetchTodos();
-    setTodos(todos);
+    const fetchedTodos = await client.fetchTodos();
+    setTodos(fetchedTodos);
   };
 
   const createNewTodo = async () => {
-    const todos = await client.createNewTodo();
-    setTodos(todos);
+    try {
+      const fetchedTodos = await client.createNewTodo();
+      setTodos(fetchedTodos);
+      setErrorMessage(null);
+    } catch (error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      setErrorMessage(axiosError.response?.data?.message || "Error creating todo");
+      console.error("Error creating todo:", error);
+    }
   };
 
   const postNewTodo = async () => {
-    const newTodo = await client.postNewTodo({
-      title: "New Posted Todo",
-      completed: false,
-    });
-    setTodos([...todos, newTodo]);
+    try {
+      const newTodo = await client.postNewTodo({
+        title: "New Posted Todo",
+        completed: false,
+      });
+      setTodos((prevTodos) => [...prevTodos, newTodo]);
+      setErrorMessage(null);
+    } catch (error) {
+      const axiosError = error as { response?: { data?: { message?: string } } };
+      setErrorMessage(axiosError.response?.data?.message || "Error creating todo");
+      console.error("Error creating todo:", error);
+    }
   };
 
   const editTodo = (todo: Todo) => {
-    const updatedTodos = todos.map((t) =>
-      t.id === todo.id ? { ...todo, editing: true } : t
+    setTodos((prevTodos) =>
+      prevTodos.map((t) =>
+        t.id === todo.id ? { ...todo, editing: true } : t
+      )
     );
-    setTodos(updatedTodos);
   };
 
   const updateTodo = async (todo: Todo) => {
     try {
       await client.updateTodo(todo);
-      setTodos(todos.map((t) => (t.id === todo.id ? todo : t)));
+      setTodos((prevTodos) => prevTodos.map((t) => (t.id === todo.id ? todo : t)));
       setErrorMessage(null);
     } catch (error) {
       const axiosError = error as { response?: { data?: { message?: string } } };
@@ -57,8 +72,8 @@ export default function WorkingWithArraysAsynchronously() {
 
   const removeTodo = async (todo: Todo) => {
     try {
-      const todos = await client.removeTodo(todo);
-      setTodos(todos);
+      const removedTodos = await client.removeTodo(todo);
+      setTodos(removedTodos);
       setErrorMessage(null);
     } catch (error) {
       const axiosError = error as { response?: { data?: { message?: string } } };
@@ -143,8 +158,8 @@ export default function WorkingWithArraysAsynchronously() {
                     }
                   }}
                   onChange={(e) =>
-                    setTodos(
-                      todos.map((t) =>
+                    setTodos((prevTodos) =>
+                      prevTodos.map((t) =>
                         t.id === todo.id ? { ...todo, title: e.target.value } : t
                       )
                     )
