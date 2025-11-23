@@ -68,19 +68,8 @@ export const signout = async () => {
 };
 
 export const updateUser = async (user: any) => {
-  try {
-    console.log("Updating user:", user._id);
-    const response = await axiosWithCredentials.put(`${USERS_API}/${user._id}`, user);
-    console.log("User updated successfully:", response.data);
-    return response.data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message: string }>;
-    console.error("Update user error status:", axiosError.response?.status);
-    console.error("Update user error data:", axiosError.response?.data);
-    console.error("Update user error message:", axiosError.message);
-    alert(`Update failed: ${axiosError.response?.data?.message || axiosError.message}`);
-    return null;
-  }
+  const response = await axiosWithCredentials.put(`${USERS_API}/${user._id}`, user);
+  return response.data;
 };
 
 export const logout = async () => {
@@ -117,3 +106,54 @@ export const updateProfile = async (userId: string, updates: any) => {
     return null;
   }
 };
+
+export const findAllUsers = async () => {
+  try {
+    const response = await axiosWithCredentials.get(USERS_API);
+    return response.data;
+  } catch (error) {
+    console.error("Find all users error:", error);
+    return [];
+  }
+};
+
+export const findUserById = async (id: string) => {
+  try {
+    const response = await axiosWithCredentials.get(`${USERS_API}/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Find user by ID error:", error);
+    return null;
+  }
+};
+
+export const findUsersByRole = async (role: string) => {
+  try {
+    const response = await axiosWithCredentials.get(`${USERS_API}?role=${role}`);
+    return response.data;
+  } catch (error) {
+    console.error("Find users by role error:", error);
+    return [];
+  }
+};
+
+export const findUsersByPartialName = async (name: string) => {
+  try {
+    const response = await axiosWithCredentials.get(`${USERS_API}?name=${name}`);
+    return response.data;
+  } catch (error) {
+    console.error("Find users by partial name error:", error);
+    return [];
+  }
+};
+
+export const deleteUser = async (userId: string) => {
+  const response = await axios.delete( `${USERS_API}/${userId}` );
+  return response.data;
+};
+
+export const createUser = async (user: any) => {
+  const response = await axiosWithCredentials.post(`${USERS_API}`, user);
+  return response.data;
+};
+
