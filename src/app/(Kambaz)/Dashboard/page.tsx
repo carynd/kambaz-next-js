@@ -2,27 +2,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import * as client from "../Courses/client";
-import * as enrollmentClient from "../Enrollments/client";
 import Link from "next/link";
 import { Button, Card, CardBody, CardImg, CardText, CardTitle, Col, FormControl, Row } from "react-bootstrap";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../store";
-import { enrollCourse, unenrollCourse, setEnrollments } from "./enrollmentsReducer";
 import { addNewCourse, deleteCourse, updateCourse, setCourses } from "../Courses/reducer";
+import { enrollCourse, unenrollCourse, setEnrollments } from "./enrollmentsReducer";
 
 export default function Dashboard() {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
-  const { enrollments } = useSelector((state: RootState) => state.enrollmentsReducer);
   const { courses } = useSelector((state: any) => state.coursesReducer);
   const dispatch = useDispatch();
 
   const [showAllCourses, setShowAllCourses] = useState(false);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
 
   const [course, setCourse] = useState<any>({
     _id: "0", name: "New Course", number: "New Number",
     startDate: "2023-09-10", endDate: "2023-12-15",
     image: "/images/reactjs.jpg", description: "New Description"
   });
+
   const onUpdateCourse = async () => {
     await client.updateCourse(course);
     dispatch(setCourses(courses.map((c: any) => {
@@ -30,80 +29,76 @@ export default function Dashboard() {
       else { return c; }
     })));
   };
+
   const onDeleteCourse = async (courseId: string) => {
-    const status = await client.deleteCourse(courseId);
+    await client.deleteCourse(courseId);
     dispatch(setCourses(courses.filter((c: any) => c._id !== courseId)));
   };
 
-
-
-  const handleAddNewCourse = () => {
-    dispatch(addNewCourse(course));
-    setCourse({
-      _id: "0", name: "New Course", number: "New Number",
-      startDate: "2023-09-10", endDate: "2023-12-15",
-      image: "/images/reactjs.jpg", description: "New Description"
-    });
-  };
   const onAddNewCourse = async () => {
     const newCourse = await client.createCourse(course);
     dispatch(setCourses([...courses, newCourse]));
   };
 
-
-  const handleDeleteCourse = (courseId: string) => {
-    dispatch(deleteCourse(courseId));
-  };
-
-  const handleUpdateCourse = () => {
-    dispatch(updateCourse(course));
-  };
-
   const isEnrolled = (courseId: string) => {
-    if (!currentUser) return false;
-    return enrollments.some(
-      (e: any) => e.user === currentUser._id && e.course === courseId
-    );
+    return enrolledCourseIds.includes(courseId);
+  };
+
+  const handleEnrollment = async (courseId: string) => {
+    if (!currentUser) return;
+    try {
+      if (isEnrolled(courseId)) {
+        await client.unenrollFromCourse(currentUser._id, courseId);
+        setEnrolledCourseIds(enrolledCourseIds.filter(id => id !== courseId));
+        // Update Redux state
+        dispatch(unenrollCourse({ userId: currentUser._id, courseId }));
+      } else {
+        await client.enrollIntoCourse(currentUser._id, courseId);
+        const newEnrolledIds = [...enrolledCourseIds, courseId];
+        setEnrolledCourseIds(newEnrolledIds);
+        // Update Redux state
+        dispatch(enrollCourse({ userId: currentUser._id, courseId }));
+        // Auto-switch to "Published Courses" view to show newly enrolled course
+        setShowAllCourses(false);
+      }
+    } catch (error) {
+      console.error("Error handling enrollment:", error);
+    }
   };
 
   useEffect(() => {
-    const fetchEnrollments = async () => {
-      if (!currentUser) return;
-      try {
-        const enrollmentsData = await enrollmentClient.findEnrollmentsForUser(currentUser._id);
-        dispatch(setEnrollments(enrollmentsData));
-      } catch (error) {
-        console.error("Error fetching enrollments:", error);
-      }
-    };
-
     const fetchCourses = async () => {
       try {
-        let courses;
-        // Faculty can see all courses; Students see only enrolled courses
         if (currentUser?.role === "FACULTY") {
-          courses = await client.fetchAllCourses();
+          const allCourses = await client.fetchAllCourses();
+          dispatch(setCourses(allCourses));
         } else {
-          courses = await client.findMyCourses();
+          // For students, fetch both enrolled and all courses
+          const myCourses = await client.findMyCourses();
+          const allCourses = await client.fetchAllCourses();
+
+          // Show all courses by default (will be filtered by displayedCourses)
+          dispatch(setCourses(allCourses));
+          const enrolledIds = myCourses.map((c: any) => c._id);
+          setEnrolledCourseIds(enrolledIds);
+
+          // Populate Redux with actual enrollments from database
+          const enrollmentsData = enrolledIds.map((courseId: string) => ({
+            _id: `${currentUser._id}-${courseId}`,
+            user: currentUser._id,
+            course: courseId,
+          }));
+          dispatch(setEnrollments(enrollmentsData));
         }
-        dispatch(setCourses(courses));
       } catch (error) {
         console.error(error);
       }
     };
 
-    fetchCourses();
-    fetchEnrollments();
-  }, [currentUser, dispatch]);
-
-  const handleEnrollment = (courseId: string) => {
-    if (!currentUser) return;
-    if (isEnrolled(courseId)) {
-      dispatch(unenrollCourse({ userId: currentUser._id, courseId }));
-    } else {
-      dispatch(enrollCourse({ userId: currentUser._id, courseId }));
+    if (currentUser) {
+      fetchCourses();
     }
-  };
+  }, [currentUser, dispatch]);
 
   const displayedCourses = showAllCourses
     ? courses
@@ -123,16 +118,17 @@ export default function Dashboard() {
     <div id="wd-dashboard">
       <h1 id="wd-dashboard-title">
         Dashboard
-        <Button
-          variant="primary"
-          className="float-end"
-          onClick={() => setShowAllCourses(!showAllCourses)}
-        >
-          {showAllCourses ? "Courses" : "Enrollments"}
-        </Button>
+        {currentUser?.role === "STUDENT" && (
+          <Button
+            variant="primary"
+            className="float-end"
+            onClick={() => setShowAllCourses(!showAllCourses)}
+          >
+            {showAllCourses ? "Enrollments" : "Courses"}
+          </Button>
+        )}
       </h1>
       <hr />
-
 
       {currentUser?.role === "FACULTY" && (
         <>
@@ -177,7 +173,6 @@ export default function Dashboard() {
                       {c.description}
                     </CardText>
 
-                    {/* Only show Edit and Delete buttons if user is FACULTY */}
                     {currentUser?.role === "FACULTY" && (
                       <>
                         <Button
@@ -200,14 +195,15 @@ export default function Dashboard() {
                           className="me-2 float-end">
                           Edit
                         </Button>
+                        <Button variant="primary" className="float-start"> Go </Button>
                       </>
                     )}
 
-                    {isEnrolled(c._id) && (
-                      <Button variant="primary"> Go </Button>
+                    {!showAllCourses && isEnrolled(c._id) && (
+                      <Button variant="primary" className="float-start"> Go </Button>
                     )}
 
-                    {showAllCourses && (
+                    {currentUser?.role === "STUDENT" && showAllCourses && (
                       <Button
                         variant={isEnrolled(c._id) ? "danger" : "success"}
                         className="w-100 mt-2"

@@ -35,12 +35,12 @@ export default function Modules() {
   };
 
   const onRemoveModule = async (moduleId: string) => {
-    await client.deleteModule(moduleId);
+    await client.deleteModule(cid as string, moduleId);
     dispatch(setModules(modules.filter((m: any) => m._id !== moduleId)));
   };
 
   const onUpdateModule = async (module: any) => {
-    await client.updateModule(module);
+    await client.updateModule(cid as string, module);
     const newModules = modules.map((m: any) => m._id === module._id ? module : m);
     dispatch(setModules(newModules));
   };
@@ -70,17 +70,24 @@ export default function Modules() {
                 {module.editing && currentUser?.role === "FACULTY" && (
                   <FormControl
                     className="w-50 d-inline-block"
+                    value={module.name}
                     onChange={(e) =>
                       dispatch(
                         updateModule({ ...module, name: e.target.value })
                       )
                     }
-                    onKeyDown={(e) => {
+                    onKeyDown={(e: any) => {
                       if (e.key === "Enter") {
-                        onUpdateModule({ ...module, editing: false });
+                        e.preventDefault();
+                        onUpdateModule({ ...module, name: e.target.value, editing: false });
                       }
                     }}
-                    defaultValue={module.name}
+                    onBlur={(e: any) => {
+                      if (module.editing) {
+                        onUpdateModule({ ...module, name: e.target.value, editing: false });
+                      }
+                    }}
+                    autoFocus
                   />
                 )}
 

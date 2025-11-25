@@ -27,8 +27,16 @@ export default function CoursesLayout({
     );
   };
 
+  const hasAccess = () => {
+    if (!currentUser) return false;
+    // Faculty can access all courses
+    if (currentUser.role === "FACULTY") return true;
+    // Students can only access enrolled courses
+    return isEnrolled();
+  };
+
   useEffect(() => {
-    if (!currentUser || !isEnrolled()) {
+    if (!currentUser || !hasAccess()) {
       router.push("/Dashboard");
     }
   }, [currentUser, enrollments, cid, router]);

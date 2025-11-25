@@ -18,15 +18,14 @@ export default function PeopleTable({
   const [showDetails, setShowDetails] = useState(false);
   const [showUserId, setShowUserId] = useState<string | null>(null);
 
-  // Filter users by enrollment if cid is provided
-  const filteredUsers = cid
-    ? users.filter((usr) =>
-        enrollments.some(
-          (enrollment: any) =>
-            enrollment.user === usr._id && enrollment.course === cid
-        )
-      )
-    : users;
+  // If cid is provided, users are already filtered by backend
+  // Otherwise, filter users by enrollment array
+  const filteredUsers = cid ? users : users.filter((usr) =>
+    enrollments.some(
+      (enrollment: any) =>
+        enrollment.user === usr._id && enrollment.course === cid
+    )
+  );
 
   return (
     <div id="wd-people-table">
