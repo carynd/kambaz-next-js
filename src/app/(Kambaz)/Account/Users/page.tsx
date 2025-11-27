@@ -17,7 +17,7 @@ export default function Users() {
 
   const filterUsersByRole = async (selectedRole: string) => {
     setRole(selectedRole);
-    setName(""); // Clear name filter
+    setName("");
     if (selectedRole) {
       const filteredUsers = await client.findUsersByRole(selectedRole);
       setUsers(filteredUsers);
@@ -28,7 +28,7 @@ export default function Users() {
 
   const filterUsersByName = async (searchName: string) => {
     setName(searchName);
-    setRole(""); // Clear role filter
+    setRole("");
     if (searchName) {
       const filteredUsers = await client.findUsersByPartialName(searchName);
       setUsers(filteredUsers);

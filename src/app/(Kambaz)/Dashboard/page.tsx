@@ -58,7 +58,6 @@ export default function Dashboard() {
         setEnrolledCourseIds(newEnrolledIds);
         // Update Redux state
         dispatch(enrollCourse({ userId: currentUser._id, courseId }));
-        // Auto-switch to "Published Courses" view to show newly enrolled course
         setShowAllCourses(false);
       }
     } catch (error) {
@@ -77,12 +76,11 @@ export default function Dashboard() {
           const myCourses = await client.findMyCourses();
           const allCourses = await client.fetchAllCourses();
 
-          // Show all courses by default (will be filtered by displayedCourses)
+
           dispatch(setCourses(allCourses));
           const enrolledIds = myCourses.map((c: any) => c._id);
           setEnrolledCourseIds(enrolledIds);
 
-          // Populate Redux with actual enrollments from database
           const enrollmentsData = enrolledIds.map((courseId: string) => ({
             _id: `${currentUser._id}-${courseId}`,
             user: currentUser._id,

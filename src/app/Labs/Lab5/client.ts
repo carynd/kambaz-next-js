@@ -51,7 +51,7 @@ export const updateTodoCompleted = async (id: number, completed: boolean) => {
 
 export const createNewTodo = async () => {
   const response = await axios.get(`${TODOS_API}/create`);
-  return response.data; // Returns entire todos array
+  return response.data;
 };
 
 export const postNewTodo = async (todo: any) => {
