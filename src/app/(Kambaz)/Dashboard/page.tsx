@@ -7,6 +7,7 @@ import { Button, Card, CardBody, CardImg, CardText, CardTitle, Col, FormControl,
 import { useSelector, useDispatch } from "react-redux";
 import { addNewCourse, deleteCourse, updateCourse, setCourses } from "../Courses/reducer";
 import { enrollCourse, unenrollCourse, setEnrollments } from "./enrollmentsReducer";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
@@ -69,13 +70,14 @@ export default function Dashboard() {
     const fetchCourses = async () => {
       try {
         if (currentUser?.role === "FACULTY") {
+          // Faculty sees only their courses
           const allCourses = await client.fetchAllCourses();
-          dispatch(setCourses(allCourses));
-        } else {
+          const facultyCourses = allCourses.filter((c: any) => c.faculty === currentUser._id);
+          dispatch(setCourses(facultyCourses));
+        } else if (currentUser?.role === "STUDENT") {
           // For students, fetch both enrolled and all courses
           const myCourses = await client.findMyCourses();
           const allCourses = await client.fetchAllCourses();
-
 
           dispatch(setCourses(allCourses));
           const enrolledIds = myCourses.map((c: any) => c._id);
@@ -87,6 +89,10 @@ export default function Dashboard() {
             course: courseId,
           }));
           dispatch(setEnrollments(enrollmentsData));
+        } else {
+          // Admin or other roles see all courses
+          const allCourses = await client.fetchAllCourses();
+          dispatch(setCourses(allCourses));
         }
       } catch (error) {
         console.error(error);
@@ -117,13 +123,19 @@ export default function Dashboard() {
       <h1 id="wd-dashboard-title">
         Dashboard
         {currentUser?.role === "STUDENT" && (
-          <Button
-            variant="primary"
-            className="float-end"
-            onClick={() => setShowAllCourses(!showAllCourses)}
-          >
-            {showAllCourses ? "Enrollments" : "Courses"}
-          </Button>
+          <div className="float-end" style={{ display: "flex", gap: "10px" }}>
+            <Link href="/Courses/BrowseAllCourses">
+              <Button variant="success">
+                Browse All Courses
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              onClick={() => setShowAllCourses(!showAllCourses)}
+            >
+              {showAllCourses ? "Enrollments" : "All Courses"}
+            </Button>
+          </div>
         )}
       </h1>
       <hr />
@@ -154,6 +166,18 @@ export default function Dashboard() {
         {showAllCourses ? "All Courses" : "Published Courses"} ({displayedCourses.length})
       </h2>
       <hr />
+
+      {!showAllCourses && currentUser?.role === "STUDENT" && displayedCourses.length === 0 && (
+        <div className="alert alert-info" role="alert">
+          <p>You are not enrolled in any courses yet.</p>
+          <p>Click "Browse All Courses" above to find and enroll in available courses.</p>
+          <Link href="/Courses/BrowseAllCourses">
+            <Button variant="success" size="sm">
+              Browse All Courses
+            </Button>
+          </Link>
+        </div>
+      )}
 
       <div id="wd-dashboard-courses">
         <Row xs={1} md={5} className="g-4">
