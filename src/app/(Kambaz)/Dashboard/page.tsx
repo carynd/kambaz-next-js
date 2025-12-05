@@ -16,6 +16,8 @@ export default function Dashboard() {
 
   const [showAllCourses, setShowAllCourses] = useState(false);
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
+  const [allAvailableCourses, setAllAvailableCourses] = useState<any[]>([]);
+  const [loadingAllCourses, setLoadingAllCourses] = useState(false);
 
   const [course, setCourse] = useState<any>({
     _id: "0", name: "New Course", number: "New Number",
@@ -45,6 +47,24 @@ export default function Dashboard() {
     return enrolledCourseIds.includes(courseId);
   };
 
+  const handleBrowseAllCourses = async () => {
+    if (!showAllCourses && currentUser?.role === "STUDENT") {
+      // Load all available courses when switching to browse mode
+      if (allAvailableCourses.length === 0) {
+        try {
+          setLoadingAllCourses(true);
+          const allCourses = await client.fetchAllCourses();
+          setAllAvailableCourses(allCourses);
+        } catch (error) {
+          console.error("Error loading all courses:", error);
+        } finally {
+          setLoadingAllCourses(false);
+        }
+      }
+    }
+    setShowAllCourses(!showAllCourses);
+  };
+
   const handleEnrollment = async (courseId: string) => {
     if (!currentUser) return;
     try {
@@ -70,16 +90,14 @@ export default function Dashboard() {
     const fetchCourses = async () => {
       try {
         if (currentUser?.role === "FACULTY") {
-          // Faculty sees only their courses
-          const allCourses = await client.fetchAllCourses();
-          const facultyCourses = allCourses.filter((c: any) => c.faculty === currentUser._id);
+          // Faculty sees only their created courses
+          const facultyCourses = await client.findMyFacultyCourses();
           dispatch(setCourses(facultyCourses));
         } else if (currentUser?.role === "STUDENT") {
-          // For students, fetch both enrolled and all courses
+          // Students see only their enrolled courses in Redux
+          // All courses are fetched separately when browsing
           const myCourses = await client.findMyCourses();
-          const allCourses = await client.fetchAllCourses();
-
-          dispatch(setCourses(allCourses));
+          dispatch(setCourses(myCourses));
           const enrolledIds = myCourses.map((c: any) => c._id);
           setEnrolledCourseIds(enrolledIds);
 
@@ -104,8 +122,8 @@ export default function Dashboard() {
     }
   }, [currentUser, dispatch]);
 
-  const displayedCourses = showAllCourses
-    ? courses
+  const displayedCourses = currentUser?.role === "STUDENT" && showAllCourses
+    ? allAvailableCourses
     : courses.filter((c: any) => isEnrolled(c._id) || currentUser?.role === "FACULTY");
 
   if (!currentUser) {
@@ -131,9 +149,10 @@ export default function Dashboard() {
             </Link>
             <Button
               variant="primary"
-              onClick={() => setShowAllCourses(!showAllCourses)}
+              onClick={handleBrowseAllCourses}
+              disabled={loadingAllCourses}
             >
-              {showAllCourses ? "Enrollments" : "All Courses"}
+              {loadingAllCourses ? "Loading..." : showAllCourses ? "My Enrollments" : "Browse All Courses"}
             </Button>
           </div>
         )}
@@ -163,7 +182,10 @@ export default function Dashboard() {
       )}
 
       <h2 id="wd-dashboard-published">
-        {showAllCourses ? "All Courses" : "Published Courses"} ({displayedCourses.length})
+        {currentUser?.role === "STUDENT" 
+          ? (showAllCourses ? "Available Courses" : "Enrolled Courses")
+          : "Published Courses"
+        } ({displayedCourses.length})
       </h2>
       <hr />
 

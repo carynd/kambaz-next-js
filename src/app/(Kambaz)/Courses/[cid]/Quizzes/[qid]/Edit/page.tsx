@@ -4,8 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../../../store";
 import { updateQuiz as updateQuizAction } from "../../reducer";
-import { FormControl, Button } from "react-bootstrap";
-import { FaCalendar } from "react-icons/fa";
+import { FormControl, Button, ButtonGroup } from "react-bootstrap";
+import { FaCalendar, FaEye, FaPencilAlt } from "react-icons/fa";
 import * as client from "../../client";
 
 export default function QuizEditor() {
@@ -14,15 +14,30 @@ export default function QuizEditor() {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state: any) => state.accountReducer);
   const { quizzes } = useSelector((state: RootState) => state.quizzesReducer);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const [quiz, setQuiz] = useState<any>({
-    title: "",
+    title: "Untitled Quiz",
     description: "",
     points: 0,
     dueDate: "",
     availableDate: "",
     availableUntilDate: "",
     course: cid,
+    quizType: "Graded Quiz",
+    assignmentGroup: "Quizzes",
+    shuffleAnswers: true,
+    timeLimit: 20,
+    multipleAttempts: false,
+    howManyAttempts: 1,
+    showCorrectAnswers: "Immediately",
+    accessCode: "",
+    oneQuestionAtATime: true,
+    webcamRequired: false,
+    lockQuestionsAfterAnswering: false,
+    published: false,
+    numQuestions: 0,
+    questions: [],
   });
 
   useEffect(() => {
@@ -83,10 +98,79 @@ export default function QuizEditor() {
 
   return (
     <div id="wd-quizzes-editor" className="p-4">
-      <h3>{qid === "new" ? "New Quiz" : "Edit Quiz"}</h3>
+      {/* Header with Title and Points/Status */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h3 className="mb-0">{qid === "new" ? "New Quiz" : "Edit Quiz"}</h3>
+        <div className="d-flex gap-3 align-items-center">
+          <span className="text-muted">
+            <strong>Points:</strong> {quiz.points || 0}
+          </span>
+          <span className={quiz.published ? "text-success" : "text-danger"}>
+            <strong>Status:</strong> {quiz.published ? "Published" : "Not Published"}
+          </span>
+        </div>
+      </div>
+
+      {/* Preview/Edit Toggle Buttons */}
+      <div className="d-flex justify-content-center my-3">
+        <ButtonGroup>
+          <Button
+            variant={!isPreviewMode ? "light" : "outline-secondary"}
+            onClick={() => setIsPreviewMode(false)}
+            style={{
+              backgroundColor: !isPreviewMode ? "#f8f9fa" : "white",
+              color: !isPreviewMode ? "#000" : "#6c757d",
+              border: "1px solid #dee2e6",
+              fontWeight: !isPreviewMode ? "500" : "normal",
+            }}
+          >
+            <FaPencilAlt className="me-2" />
+            Edit
+          </Button>
+          <Button
+            variant={isPreviewMode ? "light" : "outline-secondary"}
+            onClick={() => setIsPreviewMode(true)}
+            style={{
+              backgroundColor: isPreviewMode ? "#f8f9fa" : "white",
+              color: isPreviewMode ? "#000" : "#6c757d",
+              border: "1px solid #dee2e6",
+              fontWeight: isPreviewMode ? "500" : "normal",
+            }}
+          >
+            <FaEye className="me-2" />
+            Preview
+          </Button>
+        </ButtonGroup>
+      </div>
+
       <hr />
 
-      {/* Quiz Name */}
+      {isPreviewMode ? (
+        /* Preview Mode */
+        <div className="preview-content">
+          <div className="mb-4">
+            <h4>{quiz.title || "Untitled Quiz"}</h4>
+          </div>
+          <div className="mb-4">
+            <p className="text-muted">{quiz.description || "No description provided"}</p>
+          </div>
+          <div className="mb-4">
+            <p><strong>Points:</strong> {quiz.points || 0}</p>
+          </div>
+          <div className="mb-4">
+            <p><strong>Due Date:</strong> {quiz.dueDate ? new Date(quiz.dueDate).toLocaleString() : "Not set"}</p>
+          </div>
+          <div className="mb-4">
+            <p><strong>Available From:</strong> {quiz.availableDate ? new Date(quiz.availableDate).toLocaleString() : "Not set"}</p>
+          </div>
+          <div className="mb-4">
+            <p><strong>Available Until:</strong> {quiz.availableUntilDate ? new Date(quiz.availableUntilDate).toLocaleString() : "Not set"}</p>
+          </div>
+        </div>
+      ) : (
+        /* Edit Mode */
+        <>
+          {/* Quiz Name */}
       <div className="mb-4">
         <label htmlFor="wd-quiz-name" className="form-label fw-bold">
           Quiz Name
@@ -199,6 +283,8 @@ export default function QuizEditor() {
           Save
         </Button>
       </div>
+        </>
+      )}
     </div>
   );
 }

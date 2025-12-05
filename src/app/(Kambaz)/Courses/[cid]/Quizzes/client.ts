@@ -61,3 +61,62 @@ export const unpublishQuiz = async (quizId: string) => {
   });
   return response.json();
 };
+
+export const submitQuizAttempt = async (
+  courseId: string,
+  quizId: string,
+  answers: any[],
+  score: number,
+  totalPoints: number
+) => {
+  const response = await fetch(
+    `${QUIZZES_API}/${courseId}/quizzes/${quizId}/submit`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers, score, totalPoints }),
+    }
+  );
+  return response.json();
+};
+
+export const getStudentAttempts = async (quizId: string) => {
+  const response = await fetch(
+    `${HTTP_SERVER}/api/quizzes/${quizId}/attempts`,
+    {
+      credentials: "include",
+    }
+  );
+  return response.json();
+};
+
+export const getLastStudentAttempt = async (quizId: string) => {
+  const response = await fetch(
+    `${HTTP_SERVER}/api/quizzes/${quizId}/last-attempt`,
+    {
+      credentials: "include",
+    }
+  );
+  return response.json();
+};
+
+export const getAttemptCount = async (quizId: string) => {
+  const response = await fetch(
+    `${HTTP_SERVER}/api/quizzes/${quizId}/attempt-count`,
+    {
+      credentials: "include",
+    }
+  );
+  return response.json();
+};
+
+export const getQuizAvailability = async (quizId: string) => {
+  const response = await fetch(
+    `${HTTP_SERVER}/api/quizzes/${quizId}/availability`,
+    {
+      credentials: "include",
+    }
+  );
+  return response.json();
+};

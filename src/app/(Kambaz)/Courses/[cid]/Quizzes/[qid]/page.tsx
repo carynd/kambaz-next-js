@@ -5,8 +5,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../../store";
 import { updateQuiz as updateQuizAction } from "../reducer";
 import { Button, Nav, Tab } from "react-bootstrap";
-import { FaEdit, FaPlus, FaTrash, FaTimes } from "react-icons/fa";
+import { FaEdit, FaPlus, FaTrash, FaTimes, FaCheck, FaQuestionCircle } from "react-icons/fa";
 import * as client from "../client";
+import TiptapEditor from "./TiptapEditor";
 
 interface QuizQuestion {
   id: string;
@@ -62,6 +63,15 @@ export default function QuizDetailsPage() {
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
+  // Student View State
+  const [isStudentTakingQuiz, setIsStudentTakingQuiz] = useState(false);
+  const [studentAttemptCount, setStudentAttemptCount] = useState(0);
+  const [lastStudentAttempt, setLastStudentAttempt] = useState<any>(null);
+  const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string }>({});
+  const [studentQuizSubmitted, setStudentQuizSubmitted] = useState(false);
+  const [studentCurrentQuestionIndex, setStudentCurrentQuestionIndex] = useState(0);
+  const [quizAvailability, setQuizAvailability] = useState<any>({ status: "Available", canAccess: true });
+
   useEffect(() => {
     if (qid && quizzes.length > 0) {
       const foundQuiz = quizzes.find((q: any) => q._id === qid);
@@ -84,10 +94,43 @@ export default function QuizDetailsPage() {
         if (foundQuiz.questions && foundQuiz.questions.length > 0) {
           setQuestions(foundQuiz.questions);
         }
+
+        // Fetch availability from backend
+        loadQuizAvailability(qid as string);
       }
     }
     setLoading(false);
   }, [qid, quizzes]);
+
+  const loadQuizAvailability = async (quizId: string) => {
+    try {
+      const availability = await client.getQuizAvailability(quizId);
+      setQuizAvailability(availability);
+    } catch (error) {
+      console.error("Error loading quiz availability:", error);
+    }
+  };
+
+  // Load student attempt data on mount
+  useEffect(() => {
+    if (currentUser?.role !== "FACULTY" && qid && currentUser) {
+      loadStudentAttemptData();
+    }
+  }, [qid, currentUser]);
+
+  const loadStudentAttemptData = async () => {
+    try {
+      const [attemptCount, lastAttempt] = await Promise.all([
+        client.getAttemptCount(qid as string),
+        client.getLastStudentAttempt(qid as string),
+      ]);
+      setStudentAttemptCount(attemptCount.count);
+      setLastStudentAttempt(lastAttempt);
+    } catch (error) {
+      console.error("Error loading student attempt data:", error);
+    }
+  };
+
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -233,7 +276,15 @@ export default function QuizDetailsPage() {
   };
 
   const checkAnswer = (question: QuizQuestion, userAnswer: string): boolean => {
-    if (question.type === "multiple-choice" || question.type === "true-false") {
+    if (question.type === "multiple-choice") {
+      // For multiple choice, check if user's answer matches the correct answers
+      const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",").sort() : [];
+      const userAnswers = userAnswer ? userAnswer.split(",").sort() : [];
+
+      // For multiple correct answers, user must select ALL correct answers and ONLY correct answers
+      if (correctAnswers.length !== userAnswers.length) return false;
+      return correctAnswers.every((ans, idx) => ans === userAnswers[idx]);
+    } else if (question.type === "true-false") {
       return userAnswer === question.correctAnswer;
     } else if (question.type === "fill-blank") {
       const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",") : [];
@@ -271,7 +322,102 @@ export default function QuizDetailsPage() {
     });
   };
 
-  if (loading) {
+  const canTakeQuiz = () => {
+    if (!quiz.published) return false;
+
+    // Check availability from backend
+    if (!quizAvailability.canAccess) return false;
+
+    // Check attempt limits
+    if (!quiz.multipleAttempts && studentAttemptCount > 0) return false;
+    if (quiz.multipleAttempts && studentAttemptCount >= quiz.howManyAttempts) return false;
+
+    return true;
+  };
+
+  const startStudentQuiz = () => {
+    setIsStudentTakingQuiz(true);
+    setStudentCurrentQuestionIndex(0);
+    setStudentAnswers({});
+    setStudentQuizSubmitted(false);
+  };
+
+  const handleStudentAnswerChange = (questionId: string, answer: string) => {
+    console.log(`handleStudentAnswerChange - questionId: ${questionId}, answer:`, answer);
+    setStudentAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }));
+  };
+
+  const handleStudentNextQuestion = () => {
+    if (studentCurrentQuestionIndex < questions.length - 1) {
+      setStudentCurrentQuestionIndex(studentCurrentQuestionIndex + 1);
+    }
+  };
+
+  const handleStudentPreviousQuestion = () => {
+    if (studentCurrentQuestionIndex > 0) {
+      setStudentCurrentQuestionIndex(studentCurrentQuestionIndex - 1);
+    }
+  };
+
+  const submitStudentQuiz = async () => {
+    try {
+      // Calculate score based on studentAnswers (not userAnswers)
+      let correctCount = 0;
+      let totalPoints = 0;
+
+      console.log("Student Answers State:", studentAnswers);
+
+      const answers = questions.map((question) => {
+        const userAnswer = studentAnswers[question.id] || "";
+        console.log(`Question ${question.id} - userAnswer:`, userAnswer);
+        const isCorrect = checkAnswer(question, userAnswer);
+        totalPoints += question.points || 0;
+        if (isCorrect) {
+          correctCount += question.points || 0;
+        }
+        return {
+          questionId: question.id,
+          questionType: question.type,
+          userAnswer: userAnswer,
+          isCorrect: isCorrect,
+          pointsEarned: isCorrect ? (question.points || 0) : 0,
+        };
+      });
+
+      console.log("Submitting answers:", answers);
+
+      await client.submitQuizAttempt(
+        cid as string,
+        qid as string,
+        answers,
+        correctCount,
+        totalPoints
+      );
+
+      setStudentQuizSubmitted(true);
+      await loadStudentAttemptData();
+    } catch (error) {
+      console.error("Error submitting quiz:", error);
+    }
+  };
+
+  const retakeStudentQuiz = () => {
+    setStudentCurrentQuestionIndex(0);
+    setStudentAnswers({});
+    setStudentQuizSubmitted(false);
+  };
+
+  const backToStudentView = () => {
+    setIsStudentTakingQuiz(false);
+    setStudentCurrentQuestionIndex(0);
+    setStudentAnswers({});
+    setStudentQuizSubmitted(false);
+  };
+
+    if (loading) {
     return (
       <div className="p-4">
         <p>Loading quiz...</p>
@@ -289,17 +435,382 @@ export default function QuizDetailsPage() {
 
   // Student View
   if (currentUser?.role !== "FACULTY") {
+    // Student is taking the quiz
+    if (isStudentTakingQuiz) {
+      if (studentQuizSubmitted) {
+        // Show student results - calculate score from studentAnswers
+        let correctCount = 0;
+        let totalPoints = 0;
+        let correctQuestions = 0;
+
+        questions.forEach((question) => {
+          const userAnswer = studentAnswers[question.id] || "";
+          totalPoints += question.points || 0;
+          if (checkAnswer(question, userAnswer)) {
+            correctCount += question.points || 0;
+            correctQuestions += 1;
+          }
+        });
+
+        const score = { correctCount, totalPoints, correctQuestions };
+        const percentage = score.totalPoints > 0 ? (score.correctCount / score.totalPoints) * 100 : 0;
+        
+        return (
+          <div className="p-4">
+            <h5 className="mb-4">Quiz Results</h5>
+            <div className="alert alert-info mb-4">
+              <div className="row">
+                <div className="col-md-4 text-center">
+                  <h6 className="text-muted mb-2">Your Score</h6>
+                  <h3 className="fw-bold text-success">{score.correctCount}/{score.totalPoints}</h3>
+                  <p className="text-muted">{percentage.toFixed(1)}%</p>
+                </div>
+                <div className="col-md-4 text-center">
+                  <h6 className="text-muted mb-2">Questions</h6>
+                  <h3 className="fw-bold">{score.correctQuestions}/{questions.length}</h3>
+                  <p className="text-muted">Correct</p>
+                </div>
+                <div className="col-md-4">
+                  {canTakeQuiz() && (
+                    <Button variant="primary" onClick={retakeStudentQuiz} className="w-100 mb-2">
+                      Retake Quiz
+                    </Button>
+                  )}
+                  <Button variant="secondary" onClick={backToStudentView} className="w-100">
+                    Back to Quiz
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Review Questions */}
+            <h6 className="fw-bold mb-3">Review Your Answers</h6>
+            {questions.map((question, index) => {
+              const userAnswer = studentAnswers[question.id] || "";
+              const isCorrect = checkAnswer(question, userAnswer);
+              return (
+                <div key={question.id} className={`border rounded p-3 mb-3 ${isCorrect ? "border-success" : "border-danger"}`}>
+                  <div className="mb-2">
+                    <span className={`badge ${isCorrect ? "bg-success" : "bg-danger"} me-2`}>Q{index + 1}</span>
+                    <strong>{question.title}</strong>
+                    <span className={`ms-3 ${isCorrect ? "text-success" : "text-danger"} fw-bold`}>
+                      {isCorrect ? "✓ Correct" : "✗ Incorrect"}
+                    </span>
+                  </div>
+                  <div className="mb-2" dangerouslySetInnerHTML={{ __html: question.question }} />
+
+                  {question.type === "multiple-choice" && (
+                    <div className="mb-2">
+                      <small className="text-muted">Your Answer:</small>
+                      <p className="mb-1 ms-3">
+                        {question.choices?.[parseInt(userAnswer)] || "Not answered"}
+                        {isCorrect && <span className="text-success ms-2">✓</span>}
+                      </p>
+                      {!isCorrect && (
+                        <>
+                          <small className="text-muted">Correct Answer:</small>
+                          <p className="mb-0 ms-3 text-success fw-bold">{question.choices?.[parseInt(question.correctAnswer || "")]}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {question.type === "true-false" && (
+                    <div className="mb-2">
+                      <small className="text-muted">Your Answer:</small>
+                      <p className="mb-1 ms-3">
+                        {userAnswer === "true" ? "True" : userAnswer === "false" ? "False" : "Not answered"}
+                        {isCorrect && <span className="text-success ms-2">✓</span>}
+                      </p>
+                      {!isCorrect && (
+                        <>
+                          <small className="text-muted">Correct Answer:</small>
+                          <p className="mb-0 ms-3 text-success fw-bold">{question.correctAnswer === "true" ? "True" : "False"}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {question.type === "fill-blank" && (
+                    <div className="mb-2">
+                      <small className="text-muted">Your Answer:</small>
+                      <p className="mb-1 ms-3">
+                        &quot;{userAnswer || "Not answered"}&quot;
+                        {isCorrect && <span className="text-success ms-2">✓</span>}
+                      </p>
+                      {!isCorrect && (
+                        <>
+                          <small className="text-muted">Acceptable Answers:</small>
+                          <ul className="mb-0 ms-3 small text-success fw-bold">
+                            {question.possibleAnswers?.map((ans, idx) => (
+                              <li key={idx}>{ans}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <small className="text-muted">Points: {question.points}</small>
+                </div>
+              );
+            })}
+
+            <hr />
+            <div className="d-flex gap-2">
+              <Button variant="secondary" onClick={backToStudentView}>
+                Back to Quiz
+              </Button>
+            </div>
+          </div>
+        );
+      } else {
+        // Show quiz taking screen
+        const currentQuestion = questions[studentCurrentQuestionIndex];
+        const userAnswer = studentAnswers[currentQuestion?.id] || "";
+
+        return (
+          <div className="container-fluid">
+            <div className="row">
+              {/* Main Content */}
+              <div className="col-lg-9 p-4">
+                {/* Quiz Header */}
+                <div className="mb-4">
+                  <h4 className="mb-2">{quiz.title}</h4>
+                  <small className="text-muted">Started: {new Date().toLocaleDateString()}</small>
+                </div>
+
+                {/* Quiz Instructions */}
+                {quiz.description && (
+                  <div className="alert alert-warning mb-4">
+                    <strong>Quiz Instructions</strong>
+                    <p className="mb-0 mt-2">{quiz.description}</p>
+                  </div>
+                )}
+
+                {/* Question Card */}
+                {currentQuestion && (
+                  <div className="border rounded mb-4" style={{ backgroundColor: "#f9f9f9" }}>
+                    <div className="border-bottom p-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: "#fff" }}>
+                      <h6 className="mb-0">Question {studentCurrentQuestionIndex + 1}</h6>
+                      <span className="text-muted">{currentQuestion.points} pts</span>
+                    </div>
+
+                    <div className="p-4">
+                      <div className="mb-4" dangerouslySetInnerHTML={{ __html: currentQuestion.question }} />
+
+                      {/* Multiple Choice */}
+                      {currentQuestion.type === "multiple-choice" && (() => {
+                        const correctAnswers = currentQuestion.correctAnswer ? currentQuestion.correctAnswer.split(",") : [];
+                        const isMultipleAnswer = correctAnswers.length > 1;
+                        const selectedAnswers = userAnswer ? userAnswer.split(",") : [];
+
+                        console.log("Student Quiz - Question:", currentQuestion.id);
+                        console.log("Student Quiz - correctAnswer:", currentQuestion.correctAnswer);
+                        console.log("Student Quiz - correctAnswers array:", correctAnswers);
+                        console.log("Student Quiz - isMultipleAnswer:", isMultipleAnswer);
+                        console.log("Student Quiz - userAnswer:", userAnswer);
+                        console.log("Student Quiz - selectedAnswers:", selectedAnswers);
+
+                        return (
+                          <div>
+                            <small className="text-muted mb-2 d-block">
+                              {isMultipleAnswer ? "Select all that apply" : "Select one answer"}
+                            </small>
+                            {currentQuestion.choices?.map((choice, idx) => (
+                              <div key={idx} className="form-check mb-2">
+                                <input
+                                  className="form-check-input"
+                                  type={isMultipleAnswer ? "checkbox" : "radio"}
+                                  name={isMultipleAnswer ? undefined : `answer-${currentQuestion.id}`}
+                                  id={`answer-${currentQuestion.id}-${idx}`}
+                                  value={idx.toString()}
+                                  checked={isMultipleAnswer ? selectedAnswers.includes(idx.toString()) : userAnswer === idx.toString()}
+                                  onChange={(e) => {
+                                    if (isMultipleAnswer) {
+                                      const newAnswers = e.target.checked
+                                        ? [...selectedAnswers, idx.toString()]
+                                        : selectedAnswers.filter((a) => a !== idx.toString());
+                                      handleStudentAnswerChange(currentQuestion.id, newAnswers.join(","));
+                                    } else {
+                                      handleStudentAnswerChange(currentQuestion.id, e.target.value);
+                                    }
+                                  }}
+                                />
+                                <label className="form-check-label" htmlFor={`answer-${currentQuestion.id}-${idx}`}>
+                                  {choice}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+
+                      {/* True/False */}
+                      {currentQuestion.type === "true-false" && (
+                        <div>
+                          <div className="form-check mb-2">
+                            <input
+                              className="form-check-input"
+                              type="radio"
+                              name={`answer-${currentQuestion.id}`}
+                              id={`answer-${currentQuestion.id}-true`}
+                              value="true"
+                              checked={userAnswer === "true"}
+                              onChange={(e) => handleStudentAnswerChange(currentQuestion.id, e.target.value)}
+                            />
+                            <label className="form-check-label" htmlFor={`answer-${currentQuestion.id}-true`}>
+                              True
+                            </label>
+                          </div>
+                          <div className="form-check">
+                            <input
+                              className="form-check-input"
+                              type="radio"
+                              name={`answer-${currentQuestion.id}`}
+                              id={`answer-${currentQuestion.id}-false`}
+                              value="false"
+                              checked={userAnswer === "false"}
+                              onChange={(e) => handleStudentAnswerChange(currentQuestion.id, e.target.value)}
+                            />
+                            <label className="form-check-label" htmlFor={`answer-${currentQuestion.id}-false`}>
+                              False
+                            </label>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fill in the Blank */}
+                      {currentQuestion.type === "fill-blank" && (
+                        <div>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={userAnswer}
+                            onChange={(e) => handleStudentAnswerChange(currentQuestion.id, e.target.value)}
+                            placeholder="Enter your answer here"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Navigation */}
+                <div className="d-flex justify-content-end mb-4">
+                  {studentCurrentQuestionIndex < questions.length - 1 && (
+                    <Button variant="outline-secondary" onClick={handleStudentNextQuestion}>
+                      Next <span>&gt;</span>
+                    </Button>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="border-top pt-3 mt-4">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <small className="text-muted">
+                      <FaCheck className="me-2" />
+                      Keep Working This Quiz
+                    </small>
+                    <Button variant="outline-secondary" onClick={submitStudentQuiz}>
+                      Submit Quiz
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar - Questions List */}
+              <div className="col-lg-3 p-4 border-start" style={{ backgroundColor: "#fff" }}>
+                <h6 className="mb-3">Questions</h6>
+                <div className="list-group">
+                  {questions.map((q, idx) => {
+                    const answered = studentAnswers[q.id] !== undefined && studentAnswers[q.id] !== "";
+                    const isActive = idx === studentCurrentQuestionIndex;
+                    return (
+                      <button
+                        key={q.id}
+                        className="list-group-item list-group-item-action d-flex align-items-center"
+                        onClick={() => setStudentCurrentQuestionIndex(idx)}
+                        style={{
+                          border: "none",
+                          borderRadius: "0",
+                          backgroundColor: "transparent",
+                          color: "#dc3545",
+                          fontWeight: isActive ? "bold" : "normal",
+                        }}
+                      >
+                        <FaQuestionCircle className="me-2" size={14} style={{ color: "#6c757d" }} />
+                        {answered && <FaCheck className="me-2" size={12} />}
+                        Question {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // Show quiz overview for students
     return (
       <div className="text-center p-5">
         <h2>{quiz.title}</h2>
         <p className="text-muted mt-3">{quiz.description}</p>
-        {quiz.published ? (
-          <Button variant="primary" size="lg" className="mt-4">
-            Take Quiz
-          </Button>
+
+        {/* Availability Status */}
+        <div className="alert alert-info mt-4">
+          <p className={`mb-0 ${
+            quizAvailability.status === "Closed" ? "text-danger" :
+            quizAvailability.status.includes("Not available") ? "text-warning" :
+            "text-success"
+          }`}>
+            <strong>{quizAvailability.status}</strong>
+          </p>
+        </div>
+
+        {quiz.published && quizAvailability.canAccess ? (
+          <>
+            {lastStudentAttempt && (
+              <div className="alert alert-info mt-4">
+                <p className="mb-2">
+                  <strong>Last Attempt:</strong> {new Date(lastStudentAttempt.submittedAt).toLocaleDateString()}
+                </p>
+                <p className="mb-0">
+                  <strong>Score:</strong> {lastStudentAttempt.score}/{lastStudentAttempt.totalPoints} ({lastStudentAttempt.percentageScore?.toFixed(1)}%)
+                </p>
+              </div>
+            )}
+            
+            <div className="mt-4">
+              {studentAttemptCount > 0 && (
+                <p className="text-muted mb-3">
+                  Attempts: {studentAttemptCount}/{quiz.howManyAttempts}
+                </p>
+              )}
+              <Button 
+                variant="primary" 
+                size="lg" 
+                className="mt-2"
+                onClick={startStudentQuiz}
+                disabled={!canTakeQuiz()}
+              >
+                {studentAttemptCount > 0 ? "Retake Quiz" : "Take Quiz"}
+              </Button>
+              {!canTakeQuiz() && studentAttemptCount > 0 && (
+                <p className="text-danger mt-3">You have used all available attempts.</p>
+              )}
+            </div>
+          </>
         ) : (
-          <p className="text-danger mt-4">This quiz is not yet available.</p>
+          <p className="text-danger mt-4">
+            {!quiz.published
+              ? "This quiz is not yet available."
+              : `Quiz is ${quizAvailability.status.toLowerCase()}`}
+          </p>
         )}
+        
         <div className="mt-4">
           <Button
             variant="secondary"
@@ -318,29 +829,50 @@ export default function QuizDetailsPage() {
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h4 className="mb-1">{quiz.title || "Unnamed Quiz"}</h4>
-          <small className="text-muted">
-            Points: <strong>{calculateTotalPoints() || 0}</strong>
-          </small>
+          <h4 className="mb-0">{quiz.title || "Unnamed Quiz"}</h4>
         </div>
+        <div className="d-flex gap-3 align-items-center">
+          <span className="text-muted">
+            <strong>Points:</strong> {calculateTotalPoints() || 0}
+          </span>
+          <span className={quiz.published ? "text-success" : "text-danger"}>
+            <strong>Status:</strong> {quiz.published ? "Published" : "Not Published"}
+          </span>
+        </div>
+      </div>
+
+      {/* Preview/Edit Buttons */}
+      <div className="d-flex justify-content-center mb-3">
         <div className="d-flex gap-2">
           {!isEditing && !isPreviewing && (
             <>
               <Button
-                variant="outline-primary"
+                variant="light"
                 size="sm"
                 onClick={startPreview}
                 disabled={questions.length === 0}
                 title={questions.length === 0 ? "Add questions to preview" : "Preview this quiz"}
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  color: "#000",
+                  border: "1px solid #dee2e6",
+                  padding: "0.375rem 0.75rem",
+                }}
               >
                 Preview
               </Button>
               <Button
-                variant="outline-danger"
+                variant="light"
                 size="sm"
                 onClick={handleEdit}
+                style={{
+                  backgroundColor: "#f8f9fa",
+                  color: "#dc3545",
+                  border: "1px solid #dee2e6",
+                  padding: "0.375rem 0.75rem",
+                }}
               >
-                <FaEdit className="me-2" /> Edit
+                <FaEdit className="me-1" /> Edit
               </Button>
             </>
           )}
@@ -397,7 +929,7 @@ export default function QuizDetailsPage() {
                             {isCorrect ? "✓ Correct" : "✗ Incorrect"}
                           </span>
                         </div>
-                        <p className="mb-2">{question.question}</p>
+                        <div className="mb-2" dangerouslySetInnerHTML={{ __html: question.question }} />
 
                         {question.type === "multiple-choice" && (
                           <div className="mb-2">
@@ -408,8 +940,12 @@ export default function QuizDetailsPage() {
                             </p>
                             {!isCorrect && (
                               <>
-                                <small className="text-muted">Correct Answer:</small>
-                                <p className="mb-0 ms-3 text-success fw-bold">{question.choices?.[parseInt(question.correctAnswer || "")]}</p>
+                                <small className="text-muted">Correct Answer(s):</small>
+                                <div className="ms-3 text-success fw-bold">
+                                  {question.correctAnswer?.split(",").map((idx) => (
+                                    <div key={idx}>{question.choices?.[parseInt(idx)]}</div>
+                                  ))}
+                                </div>
                               </>
                             )}
                           </div>
@@ -491,29 +1027,46 @@ export default function QuizDetailsPage() {
                   return (
                     <>
                       <h6 className="fw-bold mb-3">{question.title}</h6>
-                      <p className="mb-4">{question.question}</p>
+                      <div className="mb-4" dangerouslySetInnerHTML={{ __html: question.question }} />
 
-                      {question.type === "multiple-choice" && (
-                        <div className="mb-3">
-                          <label className="form-label fw-bold">Select your answer:</label>
-                          {question.choices?.map((choice, idx) => (
-                            <div key={idx} className="form-check mb-2">
-                              <input
-                                className="form-check-input"
-                                type="radio"
-                                name={`answer-${question.id}`}
-                                id={`answer-${question.id}-${idx}`}
-                                value={idx.toString()}
-                                checked={userAnswer === idx.toString()}
-                                onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                              />
-                              <label className="form-check-label" htmlFor={`answer-${question.id}-${idx}`}>
-                                {choice}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {question.type === "multiple-choice" && (() => {
+                        const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",") : [];
+                        const isMultipleAnswer = correctAnswers.length > 1;
+                        const selectedAnswers = userAnswer ? userAnswer.split(",") : [];
+
+                        return (
+                          <div className="mb-3">
+                            <label className="form-label fw-bold">
+                              {isMultipleAnswer ? "Select all that apply:" : "Select your answer:"}
+                            </label>
+                            {question.choices?.map((choice, idx) => (
+                              <div key={idx} className="form-check mb-2">
+                                <input
+                                  className="form-check-input"
+                                  type={isMultipleAnswer ? "checkbox" : "radio"}
+                                  name={isMultipleAnswer ? undefined : `answer-${question.id}`}
+                                  id={`answer-${question.id}-${idx}`}
+                                  value={idx.toString()}
+                                  checked={isMultipleAnswer ? selectedAnswers.includes(idx.toString()) : userAnswer === idx.toString()}
+                                  onChange={(e) => {
+                                    if (isMultipleAnswer) {
+                                      const newAnswers = e.target.checked
+                                        ? [...selectedAnswers, idx.toString()]
+                                        : selectedAnswers.filter((a) => a !== idx.toString());
+                                      handleAnswerChange(question.id, newAnswers.join(","));
+                                    } else {
+                                      handleAnswerChange(question.id, e.target.value);
+                                    }
+                                  }}
+                                />
+                                <label className="form-check-label" htmlFor={`answer-${question.id}-${idx}`}>
+                                  {choice}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
 
                       {question.type === "true-false" && (
                         <div className="mb-3">
@@ -709,17 +1262,21 @@ export default function QuizDetailsPage() {
                       <strong>{question.title}</strong>
                       <span className="ms-3 text-muted small">{question.points} points</span>
                     </div>
-                    <p className="mb-2">{question.question}</p>
+                    <div className="mb-2" dangerouslySetInnerHTML={{ __html: question.question }} />
                     {question.type === "multiple-choice" && (
                       <div>
                         <small className="text-muted">Choices (✓ = correct answer):</small>
                         <ul className="mb-0 ps-3 small">
-                          {question.choices?.map((choice, idx) => (
-                            <li key={idx} className={question.correctAnswer === idx.toString() ? "fw-bold text-success" : ""}>
-                              {choice}
-                              {question.correctAnswer === idx.toString() && " ✓"}
-                            </li>
-                          ))}
+                          {question.choices?.map((choice, idx) => {
+                            const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",") : [];
+                            const isCorrect = correctAnswers.includes(idx.toString());
+                            return (
+                              <li key={idx} className={isCorrect ? "fw-bold text-success" : ""}>
+                                {choice}
+                                {isCorrect && " ✓"}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}
@@ -1208,15 +1765,8 @@ export default function QuizDetailsPage() {
                   </Button>
                 </div>
 
-                {questions.length === 0 ? (
-                  <div className="alert alert-info" role="alert">
-                    <p className="mb-0">
-                      No questions added yet. Click &quot;New Question&quot; to add one.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    {questions.map((question, index) =>
+                <div>
+                  {questions.map((question, index) =>
                       editingQuestionId === question.id && editingQuestion ? (
                         // Edit Mode
                         <div key={question.id} className="border rounded p-4 mb-4 bg-light">
@@ -1289,14 +1839,12 @@ export default function QuizDetailsPage() {
                           {/* Question Text */}
                           <div className="mb-3">
                             <label className="form-label">Question</label>
-                            <textarea
-                              className="form-control"
-                              rows={3}
+                            <TiptapEditor
                               value={editingQuestion.question || ""}
-                              onChange={(e) =>
+                              onChange={(value) =>
                                 setEditingQuestion({
                                   ...editingQuestion,
-                                  question: e.target.value,
+                                  question: value,
                                 })
                               }
                               placeholder="Enter your question here"
@@ -1307,22 +1855,28 @@ export default function QuizDetailsPage() {
                           {editingQuestion.type === "multiple-choice" && (
                             <div className="mb-3">
                               <label className="form-label fw-bold">Choices</label>
-                              <p className="small text-muted mb-2">Select the correct answer:</p>
+                              <p className="small text-muted mb-2">Select the correct answer(s) - you can select multiple:</p>
                               {editingQuestion.choices?.map((choice, choiceIdx) => (
                                 <div key={choiceIdx} className="mb-2 d-flex gap-2 align-items-center">
                                   <div className="form-check">
                                     <input
                                       className="form-check-input"
-                                      type="radio"
-                                      name={`correct-${question.id}`}
+                                      type="checkbox"
                                       id={`choice-${question.id}-${choiceIdx}`}
-                                      checked={editingQuestion.correctAnswer === choiceIdx.toString()}
-                                      onChange={() =>
+                                      checked={editingQuestion.correctAnswer?.includes(choiceIdx.toString())}
+                                      onChange={(e) => {
+                                        const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
+                                        let newCorrect: string[];
+                                        if (e.target.checked) {
+                                          newCorrect = [...currentCorrect, choiceIdx.toString()];
+                                        } else {
+                                          newCorrect = currentCorrect.filter(idx => idx !== choiceIdx.toString());
+                                        }
                                         setEditingQuestion({
                                           ...editingQuestion,
-                                          correctAnswer: choiceIdx.toString(),
-                                        })
-                                      }
+                                          correctAnswer: newCorrect.join(","),
+                                        });
+                                      }}
                                       title="Mark as correct answer"
                                     />
                                   </div>
@@ -1534,7 +2088,7 @@ export default function QuizDetailsPage() {
                             <strong>
                               Question {index + 1}: {question.title || "Untitled"}
                             </strong>
-                            <p className="mb-1 text-muted">{question.question}</p>
+                            <div className="mb-1 text-muted" dangerouslySetInnerHTML={{ __html: question.question }} />
                             <small className="text-secondary">
                               Type: {question.type === "multiple-choice"
                                 ? "Multiple Choice"
@@ -1564,7 +2118,6 @@ export default function QuizDetailsPage() {
                       )
                     )}
                   </div>
-                )}
 
                 <hr />
 

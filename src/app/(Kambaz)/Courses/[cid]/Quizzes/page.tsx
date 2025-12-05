@@ -9,6 +9,7 @@ import { useSelector, useDispatch } from "react-redux";
 import * as client from "./client";
 import { setQuizzes, deleteQuiz as deleteQuizAction, updateQuiz as updateQuizAction } from "./reducer";
 import QuizzesControls from "./QuizzesControls";
+import { HiOutlineRocketLaunch } from "react-icons/hi2";
 
 export default function QuizzesPage() {
   const { cid } = useParams() as { cid: string };
@@ -96,21 +97,34 @@ export default function QuizzesPage() {
   };
 
   const getAvailabilityStatus = (quiz: any) => {
-    if (!quiz.availableDate) return "Available";
-
+    // Get today's date at midnight for proper date comparison
     const now = new Date();
-    const availableDate = new Date(quiz.availableDate);
-    const availableUntilDate = quiz.availableUntilDate
-      ? new Date(quiz.availableUntilDate)
-      : null;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    if (now < availableDate) {
+    // Helper function to parse date string or Date object
+    const parseDate = (dateValue: any) => {
+      if (!dateValue) return null;
+
+      const date = new Date(dateValue);
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    };
+
+    const availableDate = parseDate(quiz.availableDate);
+    const availableUntilDate = parseDate(quiz.availableUntilDate);
+    const dueDate = parseDate(quiz.dueDate);
+
+    // Check if quiz is not yet available
+    if (availableDate && today < availableDate) {
       return `Not available until ${availableDate.toLocaleDateString()}`;
-    } else if (availableUntilDate && now > availableUntilDate) {
-      return "Closed";
-    } else {
-      return "Available";
     }
+
+    // Check if quiz is closed - use availableUntilDate first, then dueDate as fallback
+    const closingDate = availableUntilDate || dueDate;
+    if (closingDate && today > closingDate) {
+      return "Closed";
+    }
+
+    return "Available";
   };
 
   if (loading) {
@@ -154,123 +168,129 @@ export default function QuizzesPage() {
               }
               return quiz.published;
             })
+            .sort((a: any, b: any) => {
+              // Sort by available date (most recent first)
+              const dateA = a.availableDate ? new Date(a.availableDate).getTime() : 0;
+              const dateB = b.availableDate ? new Date(b.availableDate).getTime() : 0;
+              return dateB - dateA;
+            })
             .map((quiz: any) => (
-            <ListGroupItem
-              key={quiz._id}
-              className="wd-lesson p-3 ps-2 d-flex align-items-center"
-            >
-              <div className="d-flex align-items-center">
-                <BsGripVertical className="me-2 fs-3" />
-                <FaQuestion className="fs-3 me-3 text-primary" />
-              </div>
+              <ListGroupItem
+                key={quiz._id}
+                className="wd-lesson p-3 ps-2 d-flex align-items-center"
+              >
+                <div className="d-flex align-items-center">
+                  <BsGripVertical className="me-2 fs-3" />
+                  <HiOutlineRocketLaunch className="fs-3 me-3 text-success" />
+                </div>
 
-              <div className="flex-grow-1">
-                <Link
-                  href={`/Courses/${cid}/Quizzes/${quiz._id}`}
-                  className="text-dark text-decoration-none fw-bold"
-                >
-                  {quiz.title}
-                </Link>
-                <p className="text-muted small mb-0">
-                  <span
-                    className={
-                      getAvailabilityStatus(quiz) === "Closed"
-                        ? "text-danger"
-                        : "text-success"
-                    }
+                <div className="flex-grow-1">
+                  <Link
+                    href={`/Courses/${cid}/Quizzes/${quiz._id}`}
+                    className="text-dark text-decoration-none fw-bold"
                   >
-                    {getAvailabilityStatus(quiz)}
-                  </span>
-                  {quiz.dueDate && (
-                    <>
-                      {" "}
-                      | <strong>Due</strong> {formatDate(quiz.dueDate)} at{" "}
-                      {formatTime(quiz.dueDate)}
-                    </>
-                  )}
-                  {" "}| {quiz.points || 0} pts | {quiz.numQuestions || 0}{" "}
-                  Questions
-                </p>
-              </div>
-
-              <div className="ms-2 d-flex gap-2 align-items-center">
-                {/* Published/Unpublished Indicator - Clickable */}
-                {currentUser?.role === "FACULTY" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (quiz.published) {
-                        handleUnpublishQuiz(quiz._id);
-                      } else {
-                        handlePublishQuiz(quiz._id);
+                    {quiz.title}
+                  </Link>
+                  <p className="text-muted small mb-0">
+                    <span
+                      className={
+                        getAvailabilityStatus(quiz) === "Closed"
+                          ? "text-danger"
+                          : "text-success"
                       }
-                    }}
-                    style={{
-                      fontSize: "18px",
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      padding: "0",
-                    }}
-                    title={
-                      quiz.published
-                        ? "Click to unpublish quiz"
-                        : "Click to publish quiz"
-                    }
-                  >
-                    {quiz.published ? "✅" : "🚫"}
-                  </button>
-                ) : (
-                  <span style={{ fontSize: "18px" }}>
-                    {quiz.published ? "✅" : "🚫"}
-                  </span>
-                )}
-
-                {/* Dropdown Menu */}
-                {currentUser?.role === "FACULTY" && (
-                  <Dropdown className="ms-2">
-                    <DropdownToggle
-                      variant="link"
-                      size="sm"
-                      className="text-dark p-0"
-                      id={`dropdown-${quiz._id}`}
-                      style={{ textDecoration: "none", color: "#666" }}
                     >
-                      <FaEllipsisV className="fs-6" />
-                    </DropdownToggle>
-                    <DropdownMenu align="end">
-                      <Link href={`/Courses/${cid}/Quizzes/${quiz._id}`}>
-                        <DropdownItem as="div" className="cursor-pointer">
-                          <FaEdit className="me-2" /> Edit
-                        </DropdownItem>
-                      </Link>
-                      <DropdownItem onClick={() => handleDeleteClick(quiz._id)}>
-                        <FaTrash className="me-2 text-danger" /> Delete
-                      </DropdownItem>
-                      <Dropdown.Divider />
-                      <DropdownItem
-                        onClick={() => {
-                          if (quiz.published) {
-                            handleUnpublishQuiz(quiz._id);
-                          } else {
-                            handlePublishQuiz(quiz._id);
-                          }
-                        }}
+                      {getAvailabilityStatus(quiz)}
+                    </span>
+                    {quiz.dueDate && (
+                      <>
+                        {" "}
+                        | <strong>Due</strong> {formatDate(quiz.dueDate)} at{" "}
+                        {formatTime(quiz.dueDate)}
+                      </>
+                    )}
+                    {" "}| {quiz.points || 0} pts | {quiz.numQuestions || 0}{" "}
+                    Questions
+                  </p>
+                </div>
+
+                <div className="ms-2 d-flex gap-2 align-items-center">
+                  {/* Published/Unpublished Indicator - Clickable */}
+                  {currentUser?.role === "FACULTY" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (quiz.published) {
+                          handleUnpublishQuiz(quiz._id);
+                        } else {
+                          handlePublishQuiz(quiz._id);
+                        }
+                      }}
+                      style={{
+                        fontSize: "18px",
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                        padding: "0",
+                      }}
+                      title={
+                        quiz.published
+                          ? "Click to unpublish quiz"
+                          : "Click to publish quiz"
+                      }
+                    >
+                      {quiz.published ? "✅" : "🚫"}
+                    </button>
+                  ) : (
+                    <span style={{ fontSize: "18px" }}>
+                      {quiz.published ? "✅" : "🚫"}
+                    </span>
+                  )}
+
+                  {/* Dropdown Menu */}
+                  {currentUser?.role === "FACULTY" && (
+                    <Dropdown className="ms-2">
+                      <DropdownToggle
+                        variant="link"
+                        size="sm"
+                        className="text-dark p-0"
+                        id={`dropdown-${quiz._id}`}
+                        style={{ textDecoration: "none", color: "#666" }}
                       >
-                        {quiz.published ? "🚫 Unpublish" : "✅ Publish"}
-                      </DropdownItem>
-                      <DropdownItem>
-                        <FaCopy className="me-2" /> Copy
-                      </DropdownItem>
-                      <DropdownItem>
-                        <FaSortAmountDown className="me-2" /> Sort
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
-                )}
-              </div>
-            </ListGroupItem>
-          ))
+                        <FaEllipsisV className="fs-6" />
+                      </DropdownToggle>
+                      <DropdownMenu align="end">
+                        <Link href={`/Courses/${cid}/Quizzes/${quiz._id}`}>
+                          <DropdownItem as="div" className="cursor-pointer">
+                            <FaEdit className="me-2" /> Edit
+                          </DropdownItem>
+                        </Link>
+                        <DropdownItem onClick={() => handleDeleteClick(quiz._id)}>
+                          <FaTrash className="me-2 text-danger" /> Delete
+                        </DropdownItem>
+                        <Dropdown.Divider />
+                        <DropdownItem
+                          onClick={() => {
+                            if (quiz.published) {
+                              handleUnpublishQuiz(quiz._id);
+                            } else {
+                              handlePublishQuiz(quiz._id);
+                            }
+                          }}
+                        >
+                          {quiz.published ? "🚫 Unpublish" : "✅ Publish"}
+                        </DropdownItem>
+                        <DropdownItem>
+                          <FaCopy className="me-2" /> Copy
+                        </DropdownItem>
+                        <DropdownItem>
+                          <FaSortAmountDown className="me-2" /> Sort
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                  )}
+                </div>
+              </ListGroupItem>
+            ))
         )}
       </ListGroup>
 
