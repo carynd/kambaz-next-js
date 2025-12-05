@@ -343,7 +343,6 @@ export default function QuizDetailsPage() {
   };
 
   const handleStudentAnswerChange = (questionId: string, answer: string) => {
-    console.log(`handleStudentAnswerChange - questionId: ${questionId}, answer:`, answer);
     setStudentAnswers((prev) => ({
       ...prev,
       [questionId]: answer,
@@ -368,11 +367,8 @@ export default function QuizDetailsPage() {
       let correctCount = 0;
       let totalPoints = 0;
 
-      console.log("Student Answers State:", studentAnswers);
-
       const answers = questions.map((question) => {
         const userAnswer = studentAnswers[question.id] || "";
-        console.log(`Question ${question.id} - userAnswer:`, userAnswer);
         const isCorrect = checkAnswer(question, userAnswer);
         totalPoints += question.points || 0;
         if (isCorrect) {
@@ -386,8 +382,6 @@ export default function QuizDetailsPage() {
           pointsEarned: isCorrect ? (question.points || 0) : 0,
         };
       });
-
-      console.log("Submitting answers:", answers);
 
       await client.submitQuizAttempt(
         cid as string,
@@ -604,13 +598,6 @@ export default function QuizDetailsPage() {
                         const correctAnswers = currentQuestion.correctAnswer ? currentQuestion.correctAnswer.split(",") : [];
                         const isMultipleAnswer = correctAnswers.length > 1;
                         const selectedAnswers = userAnswer ? userAnswer.split(",") : [];
-
-                        console.log("Student Quiz - Question:", currentQuestion.id);
-                        console.log("Student Quiz - correctAnswer:", currentQuestion.correctAnswer);
-                        console.log("Student Quiz - correctAnswers array:", correctAnswers);
-                        console.log("Student Quiz - isMultipleAnswer:", isMultipleAnswer);
-                        console.log("Student Quiz - userAnswer:", userAnswer);
-                        console.log("Student Quiz - selectedAnswers:", selectedAnswers);
 
                         return (
                           <div>
