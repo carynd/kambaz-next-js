@@ -60,14 +60,14 @@ export default function QuizDetailsPage() {
   // Preview Mode State
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({});
+  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string | string[] }>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
   // Student View State
   const [isStudentTakingQuiz, setIsStudentTakingQuiz] = useState(false);
   const [studentAttemptCount, setStudentAttemptCount] = useState(0);
   const [lastStudentAttempt, setLastStudentAttempt] = useState<any>(null);
-  const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string }>({});
+  const [studentAnswers, setStudentAnswers] = useState<{ [key: string]: string | string[] }>({});
   const [studentQuizSubmitted, setStudentQuizSubmitted] = useState(false);
   const [studentCurrentQuestionIndex, setStudentCurrentQuestionIndex] = useState(0);
   const [quizAvailability, setQuizAvailability] = useState<any>({ status: "Available", canAccess: true });
@@ -246,7 +246,7 @@ export default function QuizDetailsPage() {
     setQuizSubmitted(false);
   };
 
-  const handleAnswerChange = (questionId: string, answer: string) => {
+  const handleAnswerChange = (questionId: string, answer: string | string[]) => {
     setUserAnswers((prev) => ({
       ...prev,
       [questionId]: answer,
@@ -275,24 +275,40 @@ export default function QuizDetailsPage() {
     setQuizSubmitted(false);
   };
 
-  const checkAnswer = (question: QuizQuestion, userAnswer: string): boolean => {
+  const checkAnswer = (question: QuizQuestion, userAnswer: string | string[]): boolean => {
     if (question.type === "multiple-choice") {
       // For multiple choice, check if user's answer matches the correct answers
       const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",").sort() : [];
-      const userAnswers = userAnswer ? userAnswer.split(",").sort() : [];
+      const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : userAnswer.join(",");
+      const userAnswers = userAnswerStr ? userAnswerStr.split(",").sort() : [];
 
       // For multiple correct answers, user must select ALL correct answers and ONLY correct answers
       if (correctAnswers.length !== userAnswers.length) return false;
       return correctAnswers.every((ans, idx) => ans === userAnswers[idx]);
     } else if (question.type === "true-false") {
-      return userAnswer === question.correctAnswer;
+      const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : '';
+      return userAnswerStr === question.correctAnswer;
     } else if (question.type === "fill-blank") {
-      const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",") : [];
-      const userAnswerLower = userAnswer.toLowerCase().trim();
-      return correctAnswers.some((idx) => {
-        const correctAnswer = question.possibleAnswers?.[parseInt(idx)]?.toLowerCase().trim();
-        return correctAnswer === userAnswerLower;
-      });
+      const numBlanks = question.possibleAnswers?.length || 0;
+
+      // If multiple blanks (array of answers)
+      if (Array.isArray(userAnswer)) {
+        if (userAnswer.length !== numBlanks) return false;
+
+        // Check if each blank answer matches the corresponding correct answer
+        // The correct answer for each blank is at the same index in possibleAnswers
+        return userAnswer.every((ans, idx) => {
+          const correctAnswer = question.possibleAnswers?.[idx]?.toLowerCase().trim();
+          const userAns = ans.toLowerCase().trim();
+          return correctAnswer === userAns;
+        });
+      } else {
+        // Single blank - check if answer matches any of the possible answers
+        const userAnswerLower = userAnswer.toLowerCase().trim();
+        return question.possibleAnswers?.some((correctAnswer) => {
+          return correctAnswer?.toLowerCase().trim() === userAnswerLower;
+        }) || false;
+      }
     }
     return false;
   };
@@ -342,7 +358,7 @@ export default function QuizDetailsPage() {
     setStudentQuizSubmitted(false);
   };
 
-  const handleStudentAnswerChange = (questionId: string, answer: string) => {
+  const handleStudentAnswerChange = (questionId: string, answer: string | string[]) => {
     setStudentAnswers((prev) => ({
       ...prev,
       [questionId]: answer,
@@ -368,7 +384,7 @@ export default function QuizDetailsPage() {
       let totalPoints = 0;
 
       const answers = questions.map((question) => {
-        const userAnswer = studentAnswers[question.id] || "";
+        const userAnswer = studentAnswers[question.id] || (question.type === 'fill-blank' && question.possibleAnswers && question.possibleAnswers.length > 1 ? [] : "");
         const isCorrect = checkAnswer(question, userAnswer);
         totalPoints += question.points || 0;
         if (isCorrect) {
@@ -497,7 +513,7 @@ export default function QuizDetailsPage() {
                     <div className="mb-2">
                       <small className="text-muted">Your Answer:</small>
                       <p className="mb-1 ms-3">
-                        {question.choices?.[parseInt(userAnswer)] || "Not answered"}
+                        {question.choices?.[parseInt(typeof userAnswer === 'string' ? userAnswer : '')] || "Not answered"}
                         {isCorrect && <span className="text-success ms-2">✓</span>}
                       </p>
                       {!isCorrect && (
@@ -513,7 +529,7 @@ export default function QuizDetailsPage() {
                     <div className="mb-2">
                       <small className="text-muted">Your Answer:</small>
                       <p className="mb-1 ms-3">
-                        {userAnswer === "true" ? "True" : userAnswer === "false" ? "False" : "Not answered"}
+                        {typeof userAnswer === 'string' && userAnswer === "true" ? "True" : typeof userAnswer === 'string' && userAnswer === "false" ? "False" : "Not answered"}
                         {isCorrect && <span className="text-success ms-2">✓</span>}
                       </p>
                       {!isCorrect && (
@@ -528,11 +544,32 @@ export default function QuizDetailsPage() {
                   {question.type === "fill-blank" && (
                     <div className="mb-2">
                       <small className="text-muted">Your Answer:</small>
-                      <p className="mb-1 ms-3">
-                        &quot;{userAnswer || "Not answered"}&quot;
-                        {isCorrect && <span className="text-success ms-2">✓</span>}
-                      </p>
-                      {!isCorrect && (
+                      {Array.isArray(userAnswer) ? (
+                        <div className="ms-3">
+                          {userAnswer.map((ans, idx) => {
+                            const correctAns = question.possibleAnswers?.[idx] || '';
+                            const isBlankCorrect = ans.toLowerCase().trim() === correctAns?.toLowerCase().trim();
+                            return (
+                              <div key={idx} className="mb-1">
+                                <strong>Blank {idx + 1}:</strong> &quot;{ans || "Not answered"}&quot;
+                                {isBlankCorrect ? (
+                                  <span className="text-success ms-2">✓</span>
+                                ) : (
+                                  <span className="text-danger ms-2">
+                                    ✗ (Correct: &quot;{correctAns}&quot;)
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="mb-1 ms-3">
+                          &quot;{userAnswer || "Not answered"}&quot;
+                          {isCorrect && <span className="text-success ms-2">✓</span>}
+                        </p>
+                      )}
+                      {!isCorrect && !Array.isArray(userAnswer) && (
                         <>
                           <small className="text-muted">Acceptable Answers:</small>
                           <ul className="mb-0 ms-3 small text-success fw-bold">
@@ -597,7 +634,8 @@ export default function QuizDetailsPage() {
                       {currentQuestion.type === "multiple-choice" && (() => {
                         const correctAnswers = currentQuestion.correctAnswer ? currentQuestion.correctAnswer.split(",") : [];
                         const isMultipleAnswer = correctAnswers.length > 1;
-                        const selectedAnswers = userAnswer ? userAnswer.split(",") : [];
+                        const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : '';
+                        const selectedAnswers = userAnswerStr ? userAnswerStr.split(",") : [];
 
                         return (
                           <div>
@@ -612,7 +650,7 @@ export default function QuizDetailsPage() {
                                   name={isMultipleAnswer ? undefined : `answer-${currentQuestion.id}`}
                                   id={`answer-${currentQuestion.id}-${idx}`}
                                   value={idx.toString()}
-                                  checked={isMultipleAnswer ? selectedAnswers.includes(idx.toString()) : userAnswer === idx.toString()}
+                                  checked={isMultipleAnswer ? selectedAnswers.includes(idx.toString()) : userAnswerStr === idx.toString()}
                                   onChange={(e) => {
                                     if (isMultipleAnswer) {
                                       const newAnswers = e.target.checked
@@ -670,13 +708,39 @@ export default function QuizDetailsPage() {
                       {/* Fill in the Blank */}
                       {currentQuestion.type === "fill-blank" && (
                         <div>
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={userAnswer}
-                            onChange={(e) => handleStudentAnswerChange(currentQuestion.id, e.target.value)}
-                            placeholder="Enter your answer here"
-                          />
+                          {currentQuestion.possibleAnswers && currentQuestion.possibleAnswers.length > 0 ? (
+                            currentQuestion.possibleAnswers.map((_, blankIdx) => {
+                              const userAnswerArray = Array.isArray(userAnswer) ? userAnswer : [];
+                              return (
+                                <div key={blankIdx} className="mb-2">
+                                  <label className="form-label small">Blank {blankIdx + 1}:</label>
+                                  <input
+                                    type="text"
+                                    className="form-control"
+                                    value={userAnswerArray[blankIdx] || ''}
+                                    onChange={(e) => {
+                                      const newAnswers = [...userAnswerArray];
+                                      newAnswers[blankIdx] = e.target.value;
+                                      // Ensure array has correct length
+                                      while (newAnswers.length < (currentQuestion.possibleAnswers?.length || 0)) {
+                                        newAnswers.push('');
+                                      }
+                                      handleStudentAnswerChange(currentQuestion.id, newAnswers);
+                                    }}
+                                    placeholder={`Enter answer for blank ${blankIdx + 1}`}
+                                  />
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={typeof userAnswer === 'string' ? userAnswer : ''}
+                              onChange={(e) => handleStudentAnswerChange(currentQuestion.id, e.target.value)}
+                              placeholder="Enter your answer here"
+                            />
+                          )}
                         </div>
                       )}
                     </div>
@@ -711,7 +775,8 @@ export default function QuizDetailsPage() {
                 <h6 className="mb-3">Questions</h6>
                 <div className="list-group">
                   {questions.map((q, idx) => {
-                    const answered = studentAnswers[q.id] !== undefined && studentAnswers[q.id] !== "";
+                    const answer = studentAnswers[q.id];
+                    const answered = answer !== undefined && (Array.isArray(answer) ? answer.some(a => a !== "") : answer !== "");
                     const isActive = idx === studentCurrentQuestionIndex;
                     return (
                       <button
@@ -922,7 +987,7 @@ export default function QuizDetailsPage() {
                           <div className="mb-2">
                             <small className="text-muted">Your Answer:</small>
                             <p className="mb-1 ms-3">
-                              {question.choices?.[parseInt(userAnswer)] || "Not answered"}
+                              {question.choices?.[parseInt(typeof userAnswer === 'string' ? userAnswer : '')] || "Not answered"}
                               {isCorrect && <span className="text-success ms-2">✓</span>}
                             </p>
                             {!isCorrect && (
@@ -942,7 +1007,7 @@ export default function QuizDetailsPage() {
                           <div className="mb-2">
                             <small className="text-muted">Your Answer:</small>
                             <p className="mb-1 ms-3">
-                              {userAnswer === "true" ? "True" : userAnswer === "false" ? "False" : "Not answered"}
+                              {typeof userAnswer === 'string' && userAnswer === "true" ? "True" : typeof userAnswer === 'string' && userAnswer === "false" ? "False" : "Not answered"}
                               {isCorrect && <span className="text-success ms-2">✓</span>}
                             </p>
                             {!isCorrect && (
@@ -957,11 +1022,32 @@ export default function QuizDetailsPage() {
                         {question.type === "fill-blank" && (
                           <div className="mb-2">
                             <small className="text-muted">Your Answer:</small>
-                            <p className="mb-1 ms-3">
-                              &quot;{userAnswer || "Not answered"}&quot;
-                              {isCorrect && <span className="text-success ms-2">✓</span>}
-                            </p>
-                            {!isCorrect && (
+                            {Array.isArray(userAnswer) ? (
+                              <div className="ms-3">
+                                {userAnswer.map((ans, idx) => {
+                                  const correctAns = question.possibleAnswers?.[idx] || '';
+                                  const isBlankCorrect = ans.toLowerCase().trim() === correctAns?.toLowerCase().trim();
+                                  return (
+                                    <div key={idx} className="mb-1">
+                                      <strong>Blank {idx + 1}:</strong> &quot;{ans || "Not answered"}&quot;
+                                      {isBlankCorrect ? (
+                                        <span className="text-success ms-2">✓</span>
+                                      ) : (
+                                        <span className="text-danger ms-2">
+                                          ✗ (Correct: &quot;{correctAns}&quot;)
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="mb-1 ms-3">
+                                &quot;{typeof userAnswer === 'string' ? userAnswer : "Not answered"}&quot;
+                                {isCorrect && <span className="text-success ms-2">✓</span>}
+                              </p>
+                            )}
+                            {!isCorrect && !Array.isArray(userAnswer) && (
                               <>
                                 <small className="text-muted">Acceptable Answers:</small>
                                 <ul className="mb-0 ms-3 small text-success fw-bold">
@@ -1019,7 +1105,8 @@ export default function QuizDetailsPage() {
                       {question.type === "multiple-choice" && (() => {
                         const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",") : [];
                         const isMultipleAnswer = correctAnswers.length > 1;
-                        const selectedAnswers = userAnswer ? userAnswer.split(",") : [];
+                        const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : '';
+                        const selectedAnswers = userAnswerStr ? userAnswerStr.split(",") : [];
 
                         return (
                           <div className="mb-3">
@@ -1034,12 +1121,12 @@ export default function QuizDetailsPage() {
                                   name={isMultipleAnswer ? undefined : `answer-${question.id}`}
                                   id={`answer-${question.id}-${idx}`}
                                   value={idx.toString()}
-                                  checked={isMultipleAnswer ? selectedAnswers.includes(idx.toString()) : userAnswer === idx.toString()}
+                                  checked={isMultipleAnswer ? selectedAnswers.includes(idx.toString()) : userAnswerStr === idx.toString()}
                                   onChange={(e) => {
                                     if (isMultipleAnswer) {
                                       const newAnswers = e.target.checked
                                         ? [...selectedAnswers, idx.toString()]
-                                        : selectedAnswers.filter((a) => a !== idx.toString());
+                                        : selectedAnswers.filter((a: string) => a !== idx.toString());
                                       handleAnswerChange(question.id, newAnswers.join(","));
                                     } else {
                                       handleAnswerChange(question.id, e.target.value);
@@ -1091,17 +1178,40 @@ export default function QuizDetailsPage() {
 
                       {question.type === "fill-blank" && (
                         <div className="mb-3">
-                          <label htmlFor={`answer-${question.id}`} className="form-label fw-bold">
-                            Type your answer:
-                          </label>
-                          <input
-                            id={`answer-${question.id}`}
-                            type="text"
-                            className="form-control"
-                            value={userAnswer}
-                            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                            placeholder="Enter your answer here"
-                          />
+                          <label className="form-label fw-bold">Type your answer:</label>
+                          {question.possibleAnswers && question.possibleAnswers.length > 0 ? (
+                            question.possibleAnswers.map((_, blankIdx) => {
+                              const userAnswerArray = Array.isArray(userAnswer) ? userAnswer : [];
+                              return (
+                                <div key={blankIdx} className="mb-2">
+                                  <label className="form-label small">Blank {blankIdx + 1}:</label>
+                                  <input
+                                    type="text"
+                                    className="form-control"
+                                    value={userAnswerArray[blankIdx] || ''}
+                                    onChange={(e) => {
+                                      const newAnswers = [...userAnswerArray];
+                                      newAnswers[blankIdx] = e.target.value;
+                                      // Ensure array has correct length
+                                      while (newAnswers.length < (question.possibleAnswers?.length || 0)) {
+                                        newAnswers.push('');
+                                      }
+                                      handleAnswerChange(question.id, newAnswers);
+                                    }}
+                                    placeholder={`Enter answer for blank ${blankIdx + 1}`}
+                                  />
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={typeof userAnswer === 'string' ? userAnswer : ''}
+                              onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                              placeholder="Enter your answer here"
+                            />
+                          )}
                         </div>
                       )}
 
@@ -1418,52 +1528,50 @@ export default function QuizDetailsPage() {
 
                 {/* Shuffle Answers */}
                 <div className="mb-4">
-                  <label className="form-label fw-bold">Shuffle Answers</label>
-                  <div>
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="shuffle"
-                        id="shuffle-yes"
-                        checked={quiz.shuffleAnswers === true}
-                        onChange={() => setQuiz({ ...quiz, shuffleAnswers: true })}
-                      />
-                      <label className="form-check-label" htmlFor="shuffle-yes">
-                        Yes
-                      </label>
-                    </div>
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="shuffle"
-                        id="shuffle-no"
-                        checked={quiz.shuffleAnswers === false}
-                        onChange={() => setQuiz({ ...quiz, shuffleAnswers: false })}
-                      />
-                      <label className="form-check-label" htmlFor="shuffle-no">
-                        No
-                      </label>
-                    </div>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="shuffle-answers"
+                      checked={quiz.shuffleAnswers === true}
+                      onChange={(e) => setQuiz({ ...quiz, shuffleAnswers: e.target.checked })}
+                    />
+                    <label className="form-check-label fw-bold" htmlFor="shuffle-answers">
+                      Shuffle Answers
+                    </label>
                   </div>
                 </div>
 
                 {/* Time Limit */}
                 <div className="mb-4">
-                  <label htmlFor="timeLimit" className="form-label fw-bold">
-                    Time Limit (Minutes)
-                  </label>
-                  <input
-                    id="timeLimit"
-                    type="number"
-                    className="form-control"
-                    value={quiz.timeLimit || 20}
-                    onChange={(e) =>
-                      setQuiz({ ...quiz, timeLimit: parseInt(e.target.value) || 20 })
-                    }
-                    style={{ maxWidth: "200px" }}
-                  />
+                  <div className="form-check mb-2">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="time-limit-enabled"
+                      checked={quiz.timeLimit > 0}
+                      onChange={(e) => setQuiz({ ...quiz, timeLimit: e.target.checked ? 20 : 0 })}
+                    />
+                    <label className="form-check-label fw-bold" htmlFor="time-limit-enabled">
+                      Time Limit
+                    </label>
+                  </div>
+                  {quiz.timeLimit > 0 && (
+                    <div className="ms-4">
+                      <input
+                        id="timeLimit"
+                        type="number"
+                        className="form-control"
+                        value={quiz.timeLimit || 20}
+                        onChange={(e) =>
+                          setQuiz({ ...quiz, timeLimit: parseInt(e.target.value) || 20 })
+                        }
+                        style={{ maxWidth: "200px" }}
+                        placeholder="Minutes"
+                      />
+                      <small className="text-muted">Minutes</small>
+                    </div>
+                  )}
                 </div>
 
                 {/* Multiple Attempts */}
