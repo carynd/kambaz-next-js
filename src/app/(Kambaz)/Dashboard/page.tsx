@@ -141,12 +141,7 @@ export default function Dashboard() {
       <h1 id="wd-dashboard-title">
         Dashboard
         {currentUser?.role === "STUDENT" && (
-          <div className="float-end" style={{ display: "flex", gap: "10px" }}>
-            <Link href="/Courses/BrowseAllCourses">
-              <Button variant="success">
-                Browse All Courses
-              </Button>
-            </Link>
+          <div className="float-end">
             <Button
               variant="primary"
               onClick={handleBrowseAllCourses}

@@ -19,12 +19,33 @@ export default function QuizzesPage() {
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
+  const [lastAttempts, setLastAttempts] = useState<{ [quizId: string]: any }>({});
 
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
         const quizzesList = await client.fetchQuizzesForCourse(cid);
         dispatch(setQuizzes(quizzesList));
+
+        // If student, fetch last attempt for each quiz
+        if (currentUser?.role === "STUDENT") {
+          const attemptsMap: { [quizId: string]: any } = {};
+
+          for (const quiz of quizzesList) {
+            if (quiz.published) {
+              try {
+                const lastAttempt = await client.getLastStudentAttempt(quiz._id);
+                if (lastAttempt) {
+                  attemptsMap[quiz._id] = lastAttempt;
+                }
+              } catch (error) {
+                console.error(`Error fetching attempt for quiz ${quiz._id}:`, error);
+              }
+            }
+          }
+
+          setLastAttempts(attemptsMap);
+        }
       } catch (error) {
         console.error("Error fetching quizzes:", error);
       } finally {
@@ -32,10 +53,10 @@ export default function QuizzesPage() {
       }
     };
 
-    if (cid) {
+    if (cid && currentUser) {
       fetchQuizzes();
     }
-  }, [cid, dispatch]);
+  }, [cid, currentUser, dispatch]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -210,6 +231,15 @@ export default function QuizzesPage() {
                     )}
                     {" "}| {quiz.points || 0} pts | {quiz.numQuestions || 0}{" "}
                     Questions
+                    {currentUser?.role === "STUDENT" && lastAttempts[quiz._id] && (
+                      <>
+                        {" "}| <strong>Last Score:</strong>{" "}
+                        <span className="text-primary fw-bold">
+                          {lastAttempts[quiz._id].score}/{lastAttempts[quiz._id].totalPoints}
+                        </span>
+                        {" "}({lastAttempts[quiz._id].percentageScore.toFixed(1)}%)
+                      </>
+                    )}
                   </p>
                 </div>
 

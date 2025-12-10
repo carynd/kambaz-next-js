@@ -275,6 +275,72 @@ export default function QuizDetailsPage() {
     setQuizSubmitted(false);
   };
 
+  // Calculate partial points for a question with multiple parts
+  const calculatePartialPoints = (question: QuizQuestion, userAnswer: string | string[]): number => {
+    const totalPoints = question.points || 0;
+
+    if (question.type === "multiple-choice") {
+      const correctAnswers = question.correctAnswer ? question.correctAnswer.split(",") : [];
+
+      // If only one correct answer, it's all or nothing
+      if (correctAnswers.length === 1) {
+        return checkAnswer(question, userAnswer) ? totalPoints : 0;
+      }
+
+      // Multiple correct answers - partial credit
+      const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : userAnswer.join(",");
+      const userAnswers = userAnswerStr ? userAnswerStr.split(",") : [];
+
+      const pointsPerChoice = totalPoints / correctAnswers.length;
+      let earnedPoints = 0;
+
+      // Add points for each correct selection
+      userAnswers.forEach((ans) => {
+        if (correctAnswers.includes(ans)) {
+          earnedPoints += pointsPerChoice;
+        }
+      });
+
+      // Deduct points for each incorrect selection
+      userAnswers.forEach((ans) => {
+        if (!correctAnswers.includes(ans)) {
+          earnedPoints -= pointsPerChoice;
+        }
+      });
+
+      // Ensure points don't go below 0
+      return Math.max(0, earnedPoints);
+    } else if (question.type === "fill-blank") {
+      const numBlanks = question.possibleAnswers?.length || 0;
+
+      // If single blank, it's all or nothing
+      if (numBlanks === 1) {
+        return checkAnswer(question, userAnswer) ? totalPoints : 0;
+      }
+
+      // Multiple blanks - partial credit
+      if (Array.isArray(userAnswer)) {
+        const pointsPerBlank = totalPoints / numBlanks;
+        let earnedPoints = 0;
+
+        userAnswer.forEach((ans, idx) => {
+          const correctAnswer = question.possibleAnswers?.[idx]?.toLowerCase().trim();
+          const userAns = ans.toLowerCase().trim();
+          if (correctAnswer === userAns) {
+            earnedPoints += pointsPerBlank;
+          }
+        });
+
+        return earnedPoints;
+      }
+    } else if (question.type === "true-false") {
+      // True/false is always all or nothing
+      return checkAnswer(question, userAnswer) ? totalPoints : 0;
+    }
+
+    return 0;
+  };
+
   const checkAnswer = (question: QuizQuestion, userAnswer: string | string[]): boolean => {
     if (question.type === "multiple-choice") {
       // For multiple choice, check if user's answer matches the correct answers
@@ -320,9 +386,9 @@ export default function QuizDetailsPage() {
     questions.forEach((question) => {
       const userAnswer = userAnswers[question.id] || "";
       totalPoints += question.points || 0;
-      if (checkAnswer(question, userAnswer)) {
-        correctCount += question.points || 0;
-      }
+      // Use partial scoring instead of all-or-nothing
+      const earnedPoints = calculatePartialPoints(question, userAnswer);
+      correctCount += earnedPoints;
     });
 
     return { correctCount, totalPoints, correctQuestions: Object.keys(userAnswers).filter((qId) => checkAnswer(questions.find((q) => q.id === qId)!, userAnswers[qId])).length };
@@ -379,23 +445,23 @@ export default function QuizDetailsPage() {
 
   const submitStudentQuiz = async () => {
     try {
-      // Calculate score based on studentAnswers (not userAnswers)
+      // Calculate score based on studentAnswers (not userAnswers) with partial credit
       let correctCount = 0;
       let totalPoints = 0;
 
       const answers = questions.map((question) => {
         const userAnswer = studentAnswers[question.id] || (question.type === 'fill-blank' && question.possibleAnswers && question.possibleAnswers.length > 1 ? [] : "");
         const isCorrect = checkAnswer(question, userAnswer);
+        const earnedPoints = calculatePartialPoints(question, userAnswer);
         totalPoints += question.points || 0;
-        if (isCorrect) {
-          correctCount += question.points || 0;
-        }
+        correctCount += earnedPoints;
+
         return {
           questionId: question.id,
           questionType: question.type,
           userAnswer: userAnswer,
           isCorrect: isCorrect,
-          pointsEarned: isCorrect ? (question.points || 0) : 0,
+          pointsEarned: earnedPoints,
         };
       });
 
