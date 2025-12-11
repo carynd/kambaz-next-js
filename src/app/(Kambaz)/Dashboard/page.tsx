@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
   const [allAvailableCourses, setAllAvailableCourses] = useState<any[]>([]);
   const [loadingAllCourses, setLoadingAllCourses] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
   const [course, setCourse] = useState<any>({
     _id: "0", name: "New Course", number: "New Number",
@@ -88,6 +89,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchCourses = async () => {
+      setLoadingCourses(true);
       try {
         if (currentUser?.role === "FACULTY") {
           // Faculty sees only their created courses
@@ -114,6 +116,8 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error(error);
+      } finally {
+        setLoadingCourses(false);
       }
     };
 
@@ -153,6 +157,17 @@ export default function Dashboard() {
         )}
       </h1>
       <hr />
+
+      {loadingCourses && (
+        <div className="alert alert-info" role="alert">
+          <div className="d-flex align-items-center">
+            <div className="spinner-border spinner-border-sm me-2" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            Loading your courses... This may take up to 60 seconds if the server is waking up.
+          </div>
+        </div>
+      )}
 
       {currentUser?.role === "FACULTY" && (
         <>
