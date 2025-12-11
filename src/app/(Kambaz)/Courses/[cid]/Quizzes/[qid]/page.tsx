@@ -493,7 +493,7 @@ export default function QuizDetailsPage() {
     setStudentQuizSubmitted(false);
   };
 
-    if (loading) {
+  if (loading) {
     return (
       <div className="p-4">
         <p>Loading quiz...</p>
@@ -514,7 +514,7 @@ export default function QuizDetailsPage() {
     // Student is taking the quiz
     if (isStudentTakingQuiz) {
       if (studentQuizSubmitted) {
-        // Show student results - calculate score from studentAnswers
+        // Show student results - calculate score from studentAnswers with partial credit
         let correctCount = 0;
         let totalPoints = 0;
         let correctQuestions = 0;
@@ -522,15 +522,20 @@ export default function QuizDetailsPage() {
         questions.forEach((question) => {
           const userAnswer = studentAnswers[question.id] || "";
           totalPoints += question.points || 0;
+          const earnedPoints = calculatePartialPoints(question, userAnswer);
+          correctCount += earnedPoints;
           if (checkAnswer(question, userAnswer)) {
-            correctCount += question.points || 0;
             correctQuestions += 1;
           }
         });
 
         const score = { correctCount, totalPoints, correctQuestions };
         const percentage = score.totalPoints > 0 ? (score.correctCount / score.totalPoints) * 100 : 0;
-        
+
+        // Check if student has exhausted all attempts
+        const hasMoreAttempts = canTakeQuiz();
+        const showCorrectAnswers = !hasMoreAttempts;
+
         return (
           <div className="p-4">
             <h5 className="mb-4">Quiz Results</h5>
@@ -547,10 +552,23 @@ export default function QuizDetailsPage() {
                   <p className="text-muted">Correct</p>
                 </div>
                 <div className="col-md-4">
-                  {canTakeQuiz() && (
-                    <Button variant="primary" onClick={retakeStudentQuiz} className="w-100 mb-2">
-                      Retake Quiz
-                    </Button>
+                  {hasMoreAttempts ? (
+                    <>
+                      <Button variant="primary" onClick={retakeStudentQuiz} className="w-100 mb-2">
+                        Retake Quiz
+                      </Button>
+                      <p className="text-muted text-center small mb-2">
+                        Attempts: {studentAttemptCount}/{quiz.howManyAttempts || 1}
+                      </p>
+                    </>
+                  ) : (
+                    <div className="alert alert-warning mb-2 text-center">
+                      <small>
+                        {!quiz.multipleAttempts
+                          ? "Only one attempt allowed"
+                          : `Maximum attempts (${quiz.howManyAttempts}) reached`}
+                      </small>
+                    </div>
                   )}
                   <Button variant="secondary" onClick={backToStudentView} className="w-100">
                     Back to Quiz
@@ -560,98 +578,116 @@ export default function QuizDetailsPage() {
             </div>
 
             {/* Review Questions */}
-            <h6 className="fw-bold mb-3">Review Your Answers</h6>
-            {questions.map((question, index) => {
-              const userAnswer = studentAnswers[question.id] || "";
-              const isCorrect = checkAnswer(question, userAnswer);
-              return (
-                <div key={question.id} className={`border rounded p-3 mb-3 ${isCorrect ? "border-success" : "border-danger"}`}>
-                  <div className="mb-2">
-                    <span className={`badge ${isCorrect ? "bg-success" : "bg-danger"} me-2`}>Q{index + 1}</span>
-                    <strong>{question.title}</strong>
-                    <span className={`ms-3 ${isCorrect ? "text-success" : "text-danger"} fw-bold`}>
-                      {isCorrect ? "✓ Correct" : "✗ Incorrect"}
-                    </span>
-                  </div>
-                  <div className="mb-2" dangerouslySetInnerHTML={{ __html: question.question }} />
+            {showCorrectAnswers ? (
+              <>
+                <h6 className="fw-bold mb-3">Review Your Answers</h6>
+                {questions.map((question, index) => {
+                  const userAnswer = studentAnswers[question.id] || "";
+                  const isCorrect = checkAnswer(question, userAnswer);
+                  const pointsEarned = calculatePartialPoints(question, userAnswer);
+                  return (
+                    <div
+                      key={question.id}
+                      className={`border rounded p-3 mb-3 ${isCorrect ? "border-success bg-success bg-opacity-10" : "border-danger bg-danger bg-opacity-10"}`}
+                      style={{ borderWidth: "2px" }}
+                    >
+                      <div className="mb-2">
+                        <span className={`badge ${isCorrect ? "bg-success" : "bg-danger"} me-2`}>
+                          {isCorrect ? "✓" : "✗"} Q{index + 1}
+                        </span>
+                        <strong>{question.title}</strong>
+                        <span className={`ms-3 ${isCorrect ? "text-success" : "text-danger"} fw-bold fs-5`}>
+                          {isCorrect ? "✓ Correct" : "✗ Incorrect"}
+                        </span>
+                      </div>
+                      <div className="mb-2" dangerouslySetInnerHTML={{ __html: question.question }} />
 
-                  {question.type === "multiple-choice" && (
-                    <div className="mb-2">
-                      <small className="text-muted">Your Answer:</small>
-                      <p className="mb-1 ms-3">
-                        {question.choices?.[parseInt(typeof userAnswer === 'string' ? userAnswer : '')] || "Not answered"}
-                        {isCorrect && <span className="text-success ms-2">✓</span>}
-                      </p>
-                      {!isCorrect && (
-                        <>
-                          <small className="text-muted">Correct Answer:</small>
-                          <p className="mb-0 ms-3 text-success fw-bold">{question.choices?.[parseInt(question.correctAnswer || "")]}</p>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {question.type === "true-false" && (
-                    <div className="mb-2">
-                      <small className="text-muted">Your Answer:</small>
-                      <p className="mb-1 ms-3">
-                        {typeof userAnswer === 'string' && userAnswer === "true" ? "True" : typeof userAnswer === 'string' && userAnswer === "false" ? "False" : "Not answered"}
-                        {isCorrect && <span className="text-success ms-2">✓</span>}
-                      </p>
-                      {!isCorrect && (
-                        <>
-                          <small className="text-muted">Correct Answer:</small>
-                          <p className="mb-0 ms-3 text-success fw-bold">{question.correctAnswer === "true" ? "True" : "False"}</p>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {question.type === "fill-blank" && (
-                    <div className="mb-2">
-                      <small className="text-muted">Your Answer:</small>
-                      {Array.isArray(userAnswer) ? (
-                        <div className="ms-3">
-                          {userAnswer.map((ans, idx) => {
-                            const correctAns = question.possibleAnswers?.[idx] || '';
-                            const isBlankCorrect = ans.toLowerCase().trim() === correctAns?.toLowerCase().trim();
-                            return (
-                              <div key={idx} className="mb-1">
-                                <strong>Blank {idx + 1}:</strong> &quot;{ans || "Not answered"}&quot;
-                                {isBlankCorrect ? (
-                                  <span className="text-success ms-2">✓</span>
-                                ) : (
-                                  <span className="text-danger ms-2">
-                                    ✗ (Correct: &quot;{correctAns}&quot;)
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
+                      {question.type === "multiple-choice" && (
+                        <div className="mb-2">
+                          <small className="text-muted">Your Answer:</small>
+                          <p className="mb-1 ms-3">
+                            {question.choices?.[parseInt(typeof userAnswer === 'string' ? userAnswer : '')] || "Not answered"}
+                            {isCorrect && <span className="text-success ms-2">✓</span>}
+                          </p>
+                          {!isCorrect && (
+                            <>
+                              <small className="text-muted">Correct Answer:</small>
+                              <p className="mb-0 ms-3 text-success fw-bold">{question.choices?.[parseInt(question.correctAnswer || "")]}</p>
+                            </>
+                          )}
                         </div>
-                      ) : (
-                        <p className="mb-1 ms-3">
-                          &quot;{userAnswer || "Not answered"}&quot;
-                          {isCorrect && <span className="text-success ms-2">✓</span>}
-                        </p>
                       )}
-                      {!isCorrect && !Array.isArray(userAnswer) && (
-                        <>
-                          <small className="text-muted">Acceptable Answers:</small>
-                          <ul className="mb-0 ms-3 small text-success fw-bold">
-                            {question.possibleAnswers?.map((ans, idx) => (
-                              <li key={idx}>{ans}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                    </div>
-                  )}
 
-                  <small className="text-muted">Points: {question.points}</small>
-                </div>
-              );
-            })}
+                      {question.type === "true-false" && (
+                        <div className="mb-2">
+                          <small className="text-muted">Your Answer:</small>
+                          <p className="mb-1 ms-3">
+                            {typeof userAnswer === 'string' && userAnswer === "true" ? "True" : typeof userAnswer === 'string' && userAnswer === "false" ? "False" : "Not answered"}
+                            {isCorrect && <span className="text-success ms-2">✓</span>}
+                          </p>
+                          {!isCorrect && (
+                            <>
+                              <small className="text-muted">Correct Answer:</small>
+                              <p className="mb-0 ms-3 text-success fw-bold">{question.correctAnswer === "true" ? "True" : "False"}</p>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {question.type === "fill-blank" && (
+                        <div className="mb-2">
+                          <small className="text-muted">Your Answer:</small>
+                          {Array.isArray(userAnswer) ? (
+                            <div className="ms-3">
+                              {userAnswer.map((ans, idx) => {
+                                const correctAns = question.possibleAnswers?.[idx] || '';
+                                const isBlankCorrect = ans.toLowerCase().trim() === correctAns?.toLowerCase().trim();
+                                return (
+                                  <div key={idx} className="mb-1">
+                                    <strong>Blank {idx + 1}:</strong> &quot;{ans || "Not answered"}&quot;
+                                    {isBlankCorrect ? (
+                                      <span className="text-success ms-2">✓</span>
+                                    ) : (
+                                      <span className="text-danger ms-2">
+                                        ✗ (Correct: &quot;{correctAns}&quot;)
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="mb-1 ms-3">
+                              &quot;{userAnswer || "Not answered"}&quot;
+                              {isCorrect && <span className="text-success ms-2">✓</span>}
+                            </p>
+                          )}
+                          {!isCorrect && !Array.isArray(userAnswer) && (
+                            <>
+                              <small className="text-muted">Acceptable Answers:</small>
+                              <ul className="mb-0 ms-3 small text-success fw-bold">
+                                {question.possibleAnswers?.map((ans, idx) => (
+                                  <li key={idx}>{ans}</li>
+                                ))}
+                              </ul>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      <small className="text-muted">Points Earned: {pointsEarned} / {question.points}</small>
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <div className="alert alert-info">
+                <p className="mb-0">
+                  <strong>Note:</strong> Correct answers will be shown after you have used all your attempts.
+                  You have {(quiz.howManyAttempts || 1) - studentAttemptCount} attempt(s) remaining.
+                </p>
+              </div>
+            )}
 
             <hr />
             <div className="d-flex gap-2">
@@ -879,11 +915,10 @@ export default function QuizDetailsPage() {
 
         {/* Availability Status */}
         <div className="alert alert-info mt-4">
-          <p className={`mb-0 ${
-            quizAvailability.status === "Closed" ? "text-danger" :
+          <p className={`mb-0 ${quizAvailability.status === "Closed" ? "text-danger" :
             quizAvailability.status.includes("Not available") ? "text-warning" :
-            "text-success"
-          }`}>
+              "text-success"
+            }`}>
             <strong>{quizAvailability.status}</strong>
           </p>
         </div>
@@ -900,16 +935,16 @@ export default function QuizDetailsPage() {
                 </p>
               </div>
             )}
-            
+
             <div className="mt-4">
               {studentAttemptCount > 0 && (
                 <p className="text-muted mb-3">
                   Attempts: {studentAttemptCount}/{quiz.howManyAttempts}
                 </p>
               )}
-              <Button 
-                variant="primary" 
-                size="lg" 
+              <Button
+                variant="primary"
+                size="lg"
                 className="mt-2"
                 onClick={startStudentQuiz}
                 disabled={!canTakeQuiz()}
@@ -928,7 +963,7 @@ export default function QuizDetailsPage() {
               : `Quiz is ${quizAvailability.status.toLowerCase()}`}
           </p>
         )}
-        
+
         <div className="mt-4">
           <Button
             variant="secondary"
@@ -1038,6 +1073,7 @@ export default function QuizDetailsPage() {
                   {questions.map((question, index) => {
                     const userAnswer = userAnswers[question.id] || "";
                     const isCorrect = checkAnswer(question, userAnswer);
+                    const pointsEarned = calculatePartialPoints(question, userAnswer);
                     return (
                       <div key={question.id} className={`border rounded p-3 mb-3 ${isCorrect ? "border-success" : "border-danger"}`}>
                         <div className="mb-2">
@@ -1126,7 +1162,7 @@ export default function QuizDetailsPage() {
                           </div>
                         )}
 
-                        <small className="text-muted">Points: {question.points}</small>
+                        <small className="text-muted">Points Earned: {pointsEarned} / {question.points}</small>
                       </div>
                     );
                   })}
@@ -1915,370 +1951,372 @@ export default function QuizDetailsPage() {
             {/* Questions Tab */}
             <Tab.Pane eventKey="questions">
               <div>
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                  <h6 className="fw-bold mb-0">Questions ({questions.length})</h6>
-                  <Button
-                    variant="outline-success"
-                    size="sm"
-                    onClick={addNewQuestion}
-                  >
-                    <FaPlus className="me-2" /> New Question
-                  </Button>
+                <div className="mb-4">
+                  <h6 className="fw-bold mb-3">Questions ({questions.length})</h6>
+                  <div className="d-flex justify-content-center">
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      onClick={addNewQuestion}
+                    >
+                      <FaPlus className="me-1" /> New Question
+                    </Button>
+                  </div>
                 </div>
 
                 <div>
                   {questions.map((question, index) =>
-                      editingQuestionId === question.id && editingQuestion ? (
-                        // Edit Mode
-                        <div key={question.id} className="border rounded p-4 mb-4 bg-light">
-                          <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h6 className="fw-bold mb-0">Question {index + 1}</h6>
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={cancelEditingQuestion}
-                            >
-                              <FaTimes /> Close
-                            </Button>
-                          </div>
+                    editingQuestionId === question.id && editingQuestion ? (
+                      // Edit Mode
+                      <div key={question.id} className="border rounded p-4 mb-4 bg-light">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                          <h6 className="fw-bold mb-0">Question {index + 1}</h6>
+                          <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={cancelEditingQuestion}
+                          >
+                            <FaTimes /> Close
+                          </Button>
+                        </div>
 
-                          {/* Question Type */}
+                        {/* Question Type */}
+                        <div className="mb-3">
+                          <label className="form-label fw-bold">Question Type</label>
+                          <select
+                            className="form-control"
+                            title="Select question type"
+                            value={editingQuestion.type}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                type: e.target.value as "multiple-choice" | "true-false" | "fill-blank",
+                              })
+                            }
+                          >
+                            <option value="multiple-choice">Multiple Choice</option>
+                            <option value="true-false">True/False</option>
+                            <option value="fill-blank">Fill in the Blank</option>
+                          </select>
+                        </div>
+
+                        {/* Question Title */}
+                        <div className="mb-3">
+                          <label className="form-label">Question Title</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={editingQuestion.title || ""}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                title: e.target.value,
+                              })
+                            }
+                            placeholder="Enter question title"
+                          />
+                        </div>
+
+                        {/* Points */}
+                        <div className="mb-3">
+                          <label className="form-label">Points</label>
+                          <input
+                            type="number"
+                            className="form-control"
+                            title="Enter points for this question"
+                            value={editingQuestion.points || 0}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                points: parseInt(e.target.value) || 0,
+                              })
+                            }
+                            style={{ maxWidth: "150px" }}
+                          />
+                        </div>
+
+                        {/* Question Text */}
+                        <div className="mb-3">
+                          <label className="form-label">Question</label>
+                          <TiptapEditor
+                            value={editingQuestion.question || ""}
+                            onChange={(value) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                question: value,
+                              })
+                            }
+                            placeholder="Enter your question here"
+                          />
+                        </div>
+
+                        {/* Multiple Choice Specific */}
+                        {editingQuestion.type === "multiple-choice" && (
                           <div className="mb-3">
-                            <label className="form-label fw-bold">Question Type</label>
-                            <select
-                              className="form-control"
-                              title="Select question type"
-                              value={editingQuestion.type}
-                              onChange={(e) =>
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  type: e.target.value as "multiple-choice" | "true-false" | "fill-blank",
-                                })
-                              }
-                            >
-                              <option value="multiple-choice">Multiple Choice</option>
-                              <option value="true-false">True/False</option>
-                              <option value="fill-blank">Fill in the Blank</option>
-                            </select>
-                          </div>
-
-                          {/* Question Title */}
-                          <div className="mb-3">
-                            <label className="form-label">Question Title</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={editingQuestion.title || ""}
-                              onChange={(e) =>
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  title: e.target.value,
-                                })
-                              }
-                              placeholder="Enter question title"
-                            />
-                          </div>
-
-                          {/* Points */}
-                          <div className="mb-3">
-                            <label className="form-label">Points</label>
-                            <input
-                              type="number"
-                              className="form-control"
-                              title="Enter points for this question"
-                              value={editingQuestion.points || 0}
-                              onChange={(e) =>
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  points: parseInt(e.target.value) || 0,
-                                })
-                              }
-                              style={{ maxWidth: "150px" }}
-                            />
-                          </div>
-
-                          {/* Question Text */}
-                          <div className="mb-3">
-                            <label className="form-label">Question</label>
-                            <TiptapEditor
-                              value={editingQuestion.question || ""}
-                              onChange={(value) =>
-                                setEditingQuestion({
-                                  ...editingQuestion,
-                                  question: value,
-                                })
-                              }
-                              placeholder="Enter your question here"
-                            />
-                          </div>
-
-                          {/* Multiple Choice Specific */}
-                          {editingQuestion.type === "multiple-choice" && (
-                            <div className="mb-3">
-                              <label className="form-label fw-bold">Choices</label>
-                              <p className="small text-muted mb-2">Select the correct answer(s) - you can select multiple:</p>
-                              {editingQuestion.choices?.map((choice, choiceIdx) => (
-                                <div key={choiceIdx} className="mb-2 d-flex gap-2 align-items-center">
-                                  <div className="form-check">
-                                    <input
-                                      className="form-check-input"
-                                      type="checkbox"
-                                      id={`choice-${question.id}-${choiceIdx}`}
-                                      checked={editingQuestion.correctAnswer?.includes(choiceIdx.toString())}
-                                      onChange={(e) => {
-                                        const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
-                                        let newCorrect: string[];
-                                        if (e.target.checked) {
-                                          newCorrect = [...currentCorrect, choiceIdx.toString()];
-                                        } else {
-                                          newCorrect = currentCorrect.filter(idx => idx !== choiceIdx.toString());
-                                        }
-                                        setEditingQuestion({
-                                          ...editingQuestion,
-                                          correctAnswer: newCorrect.join(","),
-                                        });
-                                      }}
-                                      title="Mark as correct answer"
-                                    />
-                                  </div>
+                            <label className="form-label fw-bold">Choices</label>
+                            <p className="small text-muted mb-2">Select the correct answer(s) - you can select multiple:</p>
+                            {editingQuestion.choices?.map((choice, choiceIdx) => (
+                              <div key={choiceIdx} className="mb-2 d-flex gap-2 align-items-center">
+                                <div className="form-check">
                                   <input
-                                    type="text"
-                                    className="form-control"
-                                    value={choice}
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id={`choice-${question.id}-${choiceIdx}`}
+                                    checked={editingQuestion.correctAnswer?.includes(choiceIdx.toString())}
                                     onChange={(e) => {
-                                      const newChoices = [...(editingQuestion.choices || [])];
-                                      newChoices[choiceIdx] = e.target.value;
+                                      const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
+                                      let newCorrect: string[];
+                                      if (e.target.checked) {
+                                        newCorrect = [...currentCorrect, choiceIdx.toString()];
+                                      } else {
+                                        newCorrect = currentCorrect.filter(idx => idx !== choiceIdx.toString());
+                                      }
+                                      setEditingQuestion({
+                                        ...editingQuestion,
+                                        correctAnswer: newCorrect.join(","),
+                                      });
+                                    }}
+                                    title="Mark as correct answer"
+                                  />
+                                </div>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  value={choice}
+                                  onChange={(e) => {
+                                    const newChoices = [...(editingQuestion.choices || [])];
+                                    newChoices[choiceIdx] = e.target.value;
+                                    setEditingQuestion({
+                                      ...editingQuestion,
+                                      choices: newChoices,
+                                    });
+                                  }}
+                                  placeholder={`Choice ${choiceIdx + 1}`}
+                                />
+                                {editingQuestion.choices && editingQuestion.choices.length > 1 && (
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newChoices = editingQuestion.choices?.filter(
+                                        (_, idx) => idx !== choiceIdx
+                                      );
                                       setEditingQuestion({
                                         ...editingQuestion,
                                         choices: newChoices,
                                       });
                                     }}
-                                    placeholder={`Choice ${choiceIdx + 1}`}
-                                  />
-                                  {editingQuestion.choices && editingQuestion.choices.length > 1 && (
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={() => {
-                                        const newChoices = editingQuestion.choices?.filter(
-                                          (_, idx) => idx !== choiceIdx
-                                        );
-                                        setEditingQuestion({
-                                          ...editingQuestion,
-                                          choices: newChoices,
-                                        });
-                                      }}
-                                      title="Delete this choice"
-                                    >
-                                      <FaTrash />
-                                    </Button>
-                                  )}
-                                </div>
-                              ))}
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingQuestion({
-                                    ...editingQuestion,
-                                    choices: [...(editingQuestion.choices || []), ""],
-                                  });
-                                }}
-                              >
-                                <FaPlus className="me-2" /> Add Choice
-                              </Button>
-                            </div>
-                          )}
+                                    title="Delete this choice"
+                                  >
+                                    <FaTrash />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={() => {
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  choices: [...(editingQuestion.choices || []), ""],
+                                });
+                              }}
+                            >
+                              <FaPlus className="me-2" /> Add Choice
+                            </Button>
+                          </div>
+                        )}
 
-                          {/* True/False Specific */}
-                          {editingQuestion.type === "true-false" && (
-                            <div className="mb-3">
-                              <label className="form-label fw-bold">Correct Answer</label>
-                              <div>
-                                <div className="form-check">
-                                  <input
-                                    className="form-check-input"
-                                    type="radio"
-                                    name={`tf-${question.id}`}
-                                    id={`tf-true-${question.id}`}
-                                    checked={editingQuestion.correctAnswer === "true"}
-                                    onChange={() =>
-                                      setEditingQuestion({
-                                        ...editingQuestion,
-                                        correctAnswer: "true",
-                                      })
-                                    }
-                                  />
-                                  <label
-                                    className="form-check-label"
-                                    htmlFor={`tf-true-${question.id}`}
-                                  >
-                                    True
-                                  </label>
-                                </div>
-                                <div className="form-check">
-                                  <input
-                                    className="form-check-input"
-                                    type="radio"
-                                    name={`tf-${question.id}`}
-                                    id={`tf-false-${question.id}`}
-                                    checked={editingQuestion.correctAnswer === "false"}
-                                    onChange={() =>
-                                      setEditingQuestion({
-                                        ...editingQuestion,
-                                        correctAnswer: "false",
-                                      })
-                                    }
-                                  />
-                                  <label
-                                    className="form-check-label"
-                                    htmlFor={`tf-false-${question.id}`}
-                                  >
-                                    False
-                                  </label>
-                                </div>
+                        {/* True/False Specific */}
+                        {editingQuestion.type === "true-false" && (
+                          <div className="mb-3">
+                            <label className="form-label fw-bold">Correct Answer</label>
+                            <div>
+                              <div className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="radio"
+                                  name={`tf-${question.id}`}
+                                  id={`tf-true-${question.id}`}
+                                  checked={editingQuestion.correctAnswer === "true"}
+                                  onChange={() =>
+                                    setEditingQuestion({
+                                      ...editingQuestion,
+                                      correctAnswer: "true",
+                                    })
+                                  }
+                                />
+                                <label
+                                  className="form-check-label"
+                                  htmlFor={`tf-true-${question.id}`}
+                                >
+                                  True
+                                </label>
+                              </div>
+                              <div className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="radio"
+                                  name={`tf-${question.id}`}
+                                  id={`tf-false-${question.id}`}
+                                  checked={editingQuestion.correctAnswer === "false"}
+                                  onChange={() =>
+                                    setEditingQuestion({
+                                      ...editingQuestion,
+                                      correctAnswer: "false",
+                                    })
+                                  }
+                                />
+                                <label
+                                  className="form-check-label"
+                                  htmlFor={`tf-false-${question.id}`}
+                                >
+                                  False
+                                </label>
                               </div>
                             </div>
-                          )}
+                          </div>
+                        )}
 
-                          {/* Fill in the Blank Specific */}
-                          {editingQuestion.type === "fill-blank" && (
-                            <div className="mb-3">
-                              <label className="form-label fw-bold">Possible Answers</label>
-                              <p className="small text-muted mb-2">Add all acceptable answers. Check the correct ones. Matching will be case-insensitive.</p>
-                              {editingQuestion.possibleAnswers?.map((answer, answerIdx) => (
-                                <div key={answerIdx} className="mb-2 d-flex gap-2 align-items-center">
-                                  <div className="form-check">
-                                    <input
-                                      className="form-check-input"
-                                      type="checkbox"
-                                      id={`answer-${question.id}-${answerIdx}`}
-                                      checked={editingQuestion.correctAnswer?.includes(answerIdx.toString())}
-                                      onChange={(e) => {
-                                        const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
-                                        let newCorrect: string[];
-                                        if (e.target.checked) {
-                                          newCorrect = [...currentCorrect, answerIdx.toString()];
-                                        } else {
-                                          newCorrect = currentCorrect.filter(idx => idx !== answerIdx.toString());
-                                        }
-                                        setEditingQuestion({
-                                          ...editingQuestion,
-                                          correctAnswer: newCorrect.join(","),
-                                        });
-                                      }}
-                                      title="Mark as correct answer"
-                                    />
-                                  </div>
+                        {/* Fill in the Blank Specific */}
+                        {editingQuestion.type === "fill-blank" && (
+                          <div className="mb-3">
+                            <label className="form-label fw-bold">Possible Answers</label>
+                            <p className="small text-muted mb-2">Add all acceptable answers. Check the correct ones. Matching will be case-insensitive.</p>
+                            {editingQuestion.possibleAnswers?.map((answer, answerIdx) => (
+                              <div key={answerIdx} className="mb-2 d-flex gap-2 align-items-center">
+                                <div className="form-check">
                                   <input
-                                    type="text"
-                                    className="form-control"
-                                    value={answer}
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id={`answer-${question.id}-${answerIdx}`}
+                                    checked={editingQuestion.correctAnswer?.includes(answerIdx.toString())}
                                     onChange={(e) => {
-                                      const newAnswers = [...(editingQuestion.possibleAnswers || [])];
-                                      newAnswers[answerIdx] = e.target.value;
+                                      const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
+                                      let newCorrect: string[];
+                                      if (e.target.checked) {
+                                        newCorrect = [...currentCorrect, answerIdx.toString()];
+                                      } else {
+                                        newCorrect = currentCorrect.filter(idx => idx !== answerIdx.toString());
+                                      }
+                                      setEditingQuestion({
+                                        ...editingQuestion,
+                                        correctAnswer: newCorrect.join(","),
+                                      });
+                                    }}
+                                    title="Mark as correct answer"
+                                  />
+                                </div>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  value={answer}
+                                  onChange={(e) => {
+                                    const newAnswers = [...(editingQuestion.possibleAnswers || [])];
+                                    newAnswers[answerIdx] = e.target.value;
+                                    setEditingQuestion({
+                                      ...editingQuestion,
+                                      possibleAnswers: newAnswers,
+                                    });
+                                  }}
+                                  placeholder={`Answer ${answerIdx + 1}`}
+                                />
+                                {editingQuestion.possibleAnswers && editingQuestion.possibleAnswers.length > 1 && (
+                                  <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newAnswers = editingQuestion.possibleAnswers?.filter(
+                                        (_, idx) => idx !== answerIdx
+                                      );
                                       setEditingQuestion({
                                         ...editingQuestion,
                                         possibleAnswers: newAnswers,
                                       });
                                     }}
-                                    placeholder={`Answer ${answerIdx + 1}`}
-                                  />
-                                  {editingQuestion.possibleAnswers && editingQuestion.possibleAnswers.length > 1 && (
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={() => {
-                                        const newAnswers = editingQuestion.possibleAnswers?.filter(
-                                          (_, idx) => idx !== answerIdx
-                                        );
-                                        setEditingQuestion({
-                                          ...editingQuestion,
-                                          possibleAnswers: newAnswers,
-                                        });
-                                      }}
-                                      title="Delete this answer"
-                                    >
-                                      <FaTrash />
-                                    </Button>
-                                  )}
-                                </div>
-                              ))}
-                              <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingQuestion({
-                                    ...editingQuestion,
-                                    possibleAnswers: [...(editingQuestion.possibleAnswers || []), ""],
-                                  });
-                                }}
-                              >
-                                <FaPlus className="me-2" /> Add Another Answer
-                              </Button>
-                            </div>
-                          )}
-
-                          <hr />
-
-                          {/* Action Buttons */}
-                          <div className="d-flex justify-content-end gap-2">
+                                    title="Delete this answer"
+                                  >
+                                    <FaTrash />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
                             <Button
-                              variant="secondary"
-                              onClick={cancelEditingQuestion}
-                              className="px-3"
+                              variant="outline-secondary"
+                              size="sm"
+                              onClick={() => {
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  possibleAnswers: [...(editingQuestion.possibleAnswers || []), ""],
+                                });
+                              }}
                             >
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="danger"
-                              onClick={saveQuestion}
-                              className="px-3"
-                            >
-                              Save Question
+                              <FaPlus className="me-2" /> Add Another Answer
                             </Button>
                           </div>
+                        )}
+
+                        <hr />
+
+                        {/* Action Buttons */}
+                        <div className="d-flex justify-content-end gap-2">
+                          <Button
+                            variant="secondary"
+                            onClick={cancelEditingQuestion}
+                            className="px-3"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="danger"
+                            onClick={saveQuestion}
+                            className="px-3"
+                          >
+                            Save Question
+                          </Button>
                         </div>
-                      ) : (
-                        // Preview Mode
-                        <div
-                          key={question.id}
-                          className="border rounded p-3 mb-3 d-flex justify-content-between align-items-start"
-                        >
-                          <div className="flex-grow-1">
-                            <strong>
-                              Question {index + 1}: {question.title || "Untitled"}
-                            </strong>
-                            <div className="mb-1 text-muted" dangerouslySetInnerHTML={{ __html: question.question }} />
-                            <small className="text-secondary">
-                              Type: {question.type === "multiple-choice"
-                                ? "Multiple Choice"
-                                : question.type === "true-false"
+                      </div>
+                    ) : (
+                      // Preview Mode
+                      <div
+                        key={question.id}
+                        className="border rounded p-3 mb-3 d-flex justify-content-between align-items-start"
+                      >
+                        <div className="flex-grow-1">
+                          <strong>
+                            Question {index + 1}: {question.title || "Untitled"}
+                          </strong>
+                          <div className="mb-1 text-muted" dangerouslySetInnerHTML={{ __html: question.question }} />
+                          <small className="text-secondary">
+                            Type: {question.type === "multiple-choice"
+                              ? "Multiple Choice"
+                              : question.type === "true-false"
                                 ? "True/False"
                                 : "Fill in the Blank"}{" "}
-                              | Points: {question.points}
-                            </small>
-                          </div>
-                          <div className="d-flex gap-2 ms-3">
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              onClick={() => startEditingQuestion(question)}
-                            >
-                              <FaEdit /> Edit
-                            </Button>
-                            <Button
-                              variant="outline-danger"
-                              size="sm"
-                              onClick={() => deleteQuestion(question.id)}
-                            >
-                              <FaTrash />
-                            </Button>
-                          </div>
+                            | Points: {question.points}
+                          </small>
                         </div>
-                      )
-                    )}
-                  </div>
+                        <div className="d-flex gap-2 ms-3">
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => startEditingQuestion(question)}
+                          >
+                            <FaEdit /> Edit
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => deleteQuestion(question.id)}
+                          >
+                            <FaTrash />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
 
                 <hr />
 
