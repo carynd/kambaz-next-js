@@ -206,8 +206,8 @@ export default function QuizDetailsPage() {
       choices: ["", "", "", ""],
       correctAnswer: "0",
     };
-    setQuestions([...questions, newQuestion]);
-    setEditingQuestionId(newQuestion.id);
+    // Don't add to questions array yet - only add when user clicks Save
+    setEditingQuestionId("new");
     setEditingQuestion(newQuestion);
   };
 
@@ -217,16 +217,23 @@ export default function QuizDetailsPage() {
   };
 
   const cancelEditingQuestion = () => {
+    // If canceling a new question, don't add it to the array
     setEditingQuestionId(null);
     setEditingQuestion(null);
   };
 
   const saveQuestion = () => {
     if (editingQuestion) {
-      const updatedQuestions = questions.map((q) =>
-        q.id === editingQuestion.id ? editingQuestion : q
-      );
-      setQuestions(updatedQuestions);
+      if (editingQuestionId === "new") {
+        // This is a new question, add it to the array
+        setQuestions([...questions, editingQuestion]);
+      } else {
+        // This is an existing question, update it
+        const updatedQuestions = questions.map((q) =>
+          q.id === editingQuestion.id ? editingQuestion : q
+        );
+        setQuestions(updatedQuestions);
+      }
       cancelEditingQuestion();
     }
   };
