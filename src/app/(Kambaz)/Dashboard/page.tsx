@@ -90,20 +90,15 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchCourses = async () => {
       setLoadingCourses(true);
-      console.log("🔍 Fetching courses for user:", currentUser?.username, "role:", currentUser?.role);
       try {
         if (currentUser?.role === "FACULTY") {
           // Faculty sees only their created courses
-          console.log("   Calling findMyFacultyCourses...");
           const facultyCourses = await client.findMyFacultyCourses();
-          console.log("   ✅ Got", facultyCourses.length, "faculty courses");
           dispatch(setCourses(facultyCourses));
         } else if (currentUser?.role === "STUDENT") {
           // Students see only their enrolled courses in Redux
           // All courses are fetched separately when browsing
-          console.log("   Calling findMyCourses...");
           const myCourses = await client.findMyCourses();
-          console.log("   ✅ Got", myCourses.length, "student courses");
           dispatch(setCourses(myCourses));
           const enrolledIds = myCourses.map((c: any) => c._id);
           setEnrolledCourseIds(enrolledIds);
@@ -116,17 +111,11 @@ export default function Dashboard() {
           dispatch(setEnrollments(enrollmentsData));
         } else {
           // Admin or other roles see all courses
-          console.log("   Calling fetchAllCourses...");
           const allCourses = await client.fetchAllCourses();
-          console.log("   ✅ Got", allCourses.length, "all courses");
           dispatch(setCourses(allCourses));
         }
-      } catch (error: any) {
-        console.error("❌ Error fetching courses:", error);
-        if (error?.response) {
-          console.error("   Status:", error.response.status);
-          console.error("   Data:", error.response.data);
-        }
+      } catch (error) {
+        console.error(error);
       } finally {
         setLoadingCourses(false);
       }
