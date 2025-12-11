@@ -1,6 +1,7 @@
 import axios from "axios";
 const axiosWithCredentials = axios.create({ withCredentials: true });
 const HTTP_SERVER = process.env.NEXT_PUBLIC_HTTP_SERVER_QUIZZES || process.env.NEXT_PUBLIC_HTTP_SERVER_A6 || process.env.NEXT_PUBLIC_HTTP_SERVER;
+console.log("🌐 Backend URL:", HTTP_SERVER);
 const USERS_API = `${HTTP_SERVER}/api/users`;
 
 const COURSES_API = `${HTTP_SERVER}/api/courses`;
