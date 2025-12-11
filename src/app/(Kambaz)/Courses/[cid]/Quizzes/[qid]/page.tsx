@@ -2069,7 +2069,7 @@ export default function QuizDetailsPage() {
                                     className="form-check-input"
                                     type="checkbox"
                                     id={`choice-${question.id}-${choiceIdx}`}
-                                    checked={editingQuestion.correctAnswer?.includes(choiceIdx.toString())}
+                                    checked={editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",").includes(choiceIdx.toString()) : false}
                                     onChange={(e) => {
                                       const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
                                       let newCorrect: string[];
@@ -2198,7 +2198,7 @@ export default function QuizDetailsPage() {
                                     className="form-check-input"
                                     type="checkbox"
                                     id={`answer-${question.id}-${answerIdx}`}
-                                    checked={editingQuestion.correctAnswer?.includes(answerIdx.toString())}
+                                    checked={editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",").includes(answerIdx.toString()) : false}
                                     onChange={(e) => {
                                       const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
                                       let newCorrect: string[];
@@ -2420,7 +2420,7 @@ export default function QuizDetailsPage() {
                                   className="form-check-input"
                                   type="checkbox"
                                   id={`choice-new-${choiceIdx}`}
-                                  checked={editingQuestion.correctAnswer?.includes(choiceIdx.toString())}
+                                  checked={editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",").includes(choiceIdx.toString()) : false}
                                   onChange={(e) => {
                                     const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
                                     let newCorrect: string[];
@@ -2549,7 +2549,7 @@ export default function QuizDetailsPage() {
                                   className="form-check-input"
                                   type="checkbox"
                                   id={`answer-new-${answerIdx}`}
-                                  checked={editingQuestion.correctAnswer?.includes(answerIdx.toString())}
+                                  checked={editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",").includes(answerIdx.toString()) : false}
                                   onChange={(e) => {
                                     const currentCorrect = editingQuestion.correctAnswer ? editingQuestion.correctAnswer.split(",") : [];
                                     let newCorrect: string[];
