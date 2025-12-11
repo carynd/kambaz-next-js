@@ -613,13 +613,25 @@ export default function QuizDetailsPage() {
                         <div className="mb-2">
                           <small className="text-muted">Your Answer:</small>
                           <p className="mb-1 ms-3">
-                            {question.choices?.[parseInt(typeof userAnswer === 'string' ? userAnswer : '')] || "Not answered"}
+                            {(() => {
+                              const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : '';
+                              if (!userAnswerStr) return "Not answered";
+                              const selectedIndices = userAnswerStr.split(",");
+                              const selectedChoices = selectedIndices.map(idx => question.choices?.[parseInt(idx)]).filter(Boolean);
+                              return selectedChoices.join(", ");
+                            })()}
                             {isCorrect && <span className="text-success ms-2">✓</span>}
                           </p>
                           {!isCorrect && (
                             <>
                               <small className="text-muted">Correct Answer:</small>
-                              <p className="mb-0 ms-3 text-success fw-bold">{question.choices?.[parseInt(question.correctAnswer || "")]}</p>
+                              <p className="mb-0 ms-3 text-success fw-bold">
+                                {(() => {
+                                  const correctIndices = (question.correctAnswer || "").split(",");
+                                  const correctChoices = correctIndices.map(idx => question.choices?.[parseInt(idx)]).filter(Boolean);
+                                  return correctChoices.join(", ");
+                                })()}
+                              </p>
                             </>
                           )}
                         </div>
@@ -1096,7 +1108,13 @@ export default function QuizDetailsPage() {
                           <div className="mb-2">
                             <small className="text-muted">Your Answer:</small>
                             <p className="mb-1 ms-3">
-                              {question.choices?.[parseInt(typeof userAnswer === 'string' ? userAnswer : '')] || "Not answered"}
+                              {(() => {
+                                const userAnswerStr = typeof userAnswer === 'string' ? userAnswer : '';
+                                if (!userAnswerStr) return "Not answered";
+                                const selectedIndices = userAnswerStr.split(",");
+                                const selectedChoices = selectedIndices.map(idx => question.choices?.[parseInt(idx)]).filter(Boolean);
+                                return selectedChoices.join(", ");
+                              })()}
                               {isCorrect && <span className="text-success ms-2">✓</span>}
                             </p>
                             {!isCorrect && (
