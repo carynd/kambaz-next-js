@@ -744,7 +744,7 @@ export default function QuizDetailsPage() {
                 {currentQuestion && (
                   <div className="border rounded mb-4" style={{ backgroundColor: "#f9f9f9" }}>
                     <div className="border-bottom p-3 d-flex justify-content-between align-items-center" style={{ backgroundColor: "#fff" }}>
-                      <h6 className="mb-0">Question {studentCurrentQuestionIndex + 1}</h6>
+                      <h6 className="mb-0">{currentQuestion.title || `Question ${studentCurrentQuestionIndex + 1}`}</h6>
                       <span className="text-muted">{currentQuestion.points} pts</span>
                     </div>
 
